@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from utils import CTCLabelConverter, AttnLabelConverter
 from dataset import RawDataset, AlignCollate
 from model import Model
-from craftPytorch import cDemo
+from craftPytorch import craft_demo
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 import cv2
 
