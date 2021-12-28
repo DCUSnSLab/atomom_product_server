@@ -3,8 +3,10 @@
 ## Introduction
 
 This tool detects and recognizes text within an image.
+\n
 text detection
   "https://github.com/clovaai/deep-text-recognition-benchmark"
+\n
 text recognition
   "https://github.com/clovaai/CRAFT-pytorch"
 
