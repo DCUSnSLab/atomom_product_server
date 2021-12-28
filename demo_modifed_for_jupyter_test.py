@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from utils import CTCLabelConverter, AttnLabelConverter
 from dataset import RawDataset, AlignCollate
 from model import Model
-from craftPytorch import cDemo
+from craftPytorch import craft_demo
 from PIL import ImageFont, ImageDraw, Image
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 import cv2
@@ -133,7 +133,7 @@ def saveCraftResult(dirPath,imgs,img):
     # image_list = list(image1.glob('*.jpg'))
     # 이건 실험 코드 175부터
 def getCraftResult(imagePath,craftModel):
-    imgs, img,points = cDemo.main(imagePath,craftModel)
+    imgs, img,points = craft_demo.main(imagePath,craftModel)
     # print(len(imgs))
     resultImgs=[]
     cnt=0
@@ -215,7 +215,7 @@ if __name__ == '__main__':
     #imgPath = "./demo_image3/demo_7.jpg"
     imgPath = "../test/4032x3024/간판_가로형간판_123413.jpg"
     opt.image_folder = "./temps" #craft로 분리된 문자열이 저장되는 곳입니다
-    craftModel=cDemo.loadModel()
+    craftModel=craft_demo.loadModel()
     model = setModel(opt)
 
 
