@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from utils import CTCLabelConverter, AttnLabelConverter
 from dataset import RawDataset, AlignCollate
 from model import Model
-from craftPytorch import cDemo
+from craftPytorch import craft_demo
 from PIL import ImageFont, ImageDraw, Image
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 import cv2
@@ -133,7 +133,7 @@ def saveCraftResult(dirPath,imgs,img):
     # image_list = list(image1.glob('*.jpg'))
     # 이건 실험 코드 175부터
 def getCraftResult(imagePath,craftModel):
-    imgs, img,points = cDemo.main(imagePath,craftModel)
+    imgs, img,points = craft_demo.main(imagePath,craftModel)
     # print(len(imgs))
     resultImgs=[]
     cnt=0
@@ -179,6 +179,7 @@ def sceneTR(opt,model):
     # cv2.waitKey(1)
     print(texts)
     print(len(texts))
+
 if __name__ == '__main__':
     opt=argparse.Namespace(
         image_folder=str("demo_image2/"),
