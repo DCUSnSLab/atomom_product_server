@@ -243,12 +243,12 @@ if __name__ == '__main__':
     shutil.rmtree(opt.image_folder)
 
 
-# python demo3.py --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction CTC --image_folder demo_image2/ --saved_model best_accuracy.pth --imgH 64 --imgW 200
+# python demo_modifed_for_one_image_processing.py --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction CTC --image_folder demo_image2/ --saved_model best_accuracy.pth --imgH 64 --imgW 200
 
 #첫번째
-# python -m cProfile -o demo3.prof demo3.py --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction CTC --image_folder demo_image3/ --saved_model best_accuracy.pth --imgH 64 --imgW 200
+# python -m cProfile -o demo3.prof demo_modifed_for_one_image_processing.py --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction CTC --image_folder demo_image3/ --saved_model best_accuracy.pth --imgH 64 --imgW 200
 #두번쨰
-# python demo3.py --Transformation TPS --FeatureExtraction RCNN --SequenceModeling BiLSTM --Prediction Attn --image_folder demo_image2/ --saved_model best_accuracy2.pth --imgH 64 --imgW 200
+# python demo_modifed_for_one_image_processing.py --Transformation TPS --FeatureExtraction RCNN --SequenceModeling BiLSTM --Prediction Attn --image_folder demo_image2/ --saved_model best_accuracy2.pth --imgH 64 --imgW 200
 #제공하는
-# python demo3.py --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction Attn --image_folder demo_image2/ --saved_model TPS-ResNet-BiLSTM-Attn.pth --imgH 64 --imgW 200
+# python demo_modifed_for_one_image_processing.py --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction Attn --image_folder demo_image2/ --saved_model TPS-ResNet-BiLSTM-Attn.pth --imgH 64 --imgW 200
 
