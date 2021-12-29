@@ -133,7 +133,7 @@ def loadModel():
         link_threshold=float(0.4),
         cuda=str2bool("True"),
         canvas_size=int(1280),
-        mag_ratio=float(1.5),
+        mag_ratio=float(1),
         poly=False,
         show_time=False,
         test_folder=str("./test/"),
@@ -208,7 +208,7 @@ def main(imgPath,model):
         # cv2.waitKey(0)
         # cv2.imwrite(mask_file, score_text) # 파란거
         time5=time.time()
-        imgs,img,points=file_utils.saveResult2(image_path, image[:, :, ::-1], polys, dirname=result_folder)
+        imgs,img,points=file_utils.saveResult_modified(image_path, image[:, :, ::-1], polys, dirname=result_folder)
         time5=time.time()-time5
     time2=time.time()-time2
 

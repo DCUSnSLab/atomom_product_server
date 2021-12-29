@@ -84,7 +84,7 @@ def saveResult(img_file, img, boxes, dirname='./result/', verticals=None, texts=
         cv2.imwrite(res_img_file, img)
 
 
-def saveResult2(img_file, img, boxes, dirname='./result/', verticals=None, texts=None):
+def saveResult_modified(img_file, img, boxes, dirname='./result/', verticals=None, texts=None):
     """ save text detection result one by one
     Args:
         img_file (str): image file name
@@ -95,13 +95,14 @@ def saveResult2(img_file, img, boxes, dirname='./result/', verticals=None, texts
         None
     """
     img = np.array(img)
+    img = np.ascontiguousarray(img, dtype=np.uint8)
     src = np.array(img)
     # make result file list
     filename, file_ext = os.path.splitext(os.path.basename(img_file))
 
     # result directory
     res_file = dirname + "res_" + filename + '.txt'
-    res_img_file = dirname + "res_" + filename + '.jpg'
+
 
     if not os.path.isdir(dirname):
         os.mkdir(dirname)
@@ -125,7 +126,13 @@ def saveResult2(img_file, img, boxes, dirname='./result/', verticals=None, texts
             # x1,x2=(arr[0][0][0]<arr[2][0][0])
             points.append((arr[0][0][1],arr[0][0][0]))
             #print(poly.reshape((-1, 1, 2)))
-            #print(img.shape)
+            # for i in poly.reshape((-1, 1, 2)):
+            #     i=i[0]
+            #     row,col=i
+            #     cv2.circle(img,i,5,(255,255,255))
+            # cv2.imshow("img",img)
+            # cv2.waitKey(0)
+
             cv2.polylines(img, [poly.reshape((-1, 1, 2))], True, color=(0, 0, 255), thickness=2)
             ptColor = (0, 255, 255)
             if verticals is not None:
@@ -136,7 +143,7 @@ def saveResult2(img_file, img, boxes, dirname='./result/', verticals=None, texts
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 font_scale = 0.5
                 cv2.putText(img, "{}".format(texts[i]), (poly[0][0] + 1, poly[0][1] + 1), font, font_scale, (0, 0, 0),
-                            thickness=5)
+                            thickness=10)
                 cv2.putText(img, "{}".format(texts[i]), tuple(poly[0]), font, font_scale, (0, 255, 255), thickness=1)
 
             imgs.append(croped)
