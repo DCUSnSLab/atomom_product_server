@@ -19,4 +19,18 @@ def main():
 
 
 if __name__ == '__main__':
+    # import os, sys
+    #
+    # path = os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+    # print(path)
+    # # print(os.listdir(path))
+    # path = os.path.join(path, 'atoOCR')
+    # print(path)
+    # sys.path.append(path)
+    # import demo_modifed_for_one_image_processing as ocr
+    #
+    # craftModel, model, opt = ocr.setModel()
+    #
+
+
     main()

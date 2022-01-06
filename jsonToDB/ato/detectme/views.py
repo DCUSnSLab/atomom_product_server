@@ -13,6 +13,18 @@ def home(request):
 
 class VideoCamera(object):
     def __init__(self):
+        import os, sys
+        path=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
+        print(path)
+        # print(os.listdir(path))
+        path=os.path.join(path,'atoOCR')
+        print(path)
+        sys.path.append(path)
+        import demo_modifed_for_one_image_processing as ocr
+        craftModel, model, opt = ocr.setModel()
+
+
+
         self.video = cv2.VideoCapture(0)
         (self.grabbed, self.frame) = self.video.read()
         threading.Thread(target=self.update, args=()).start()
@@ -21,6 +33,13 @@ class VideoCamera(object):
         self.video.release()
 
     def get_frame(self):
+        import sys
+        # sys.path.append("..")
+        # import asdfg
+        import os
+
+
+
         image = self.frame
         _, jpeg = cv2.imencode('.jpg', image)
         return jpeg.tobytes()

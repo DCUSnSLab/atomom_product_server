@@ -220,6 +220,9 @@ def setModel():
     tempPath = "./temps"  # craft로 분리된 문자열이 저장되는 곳입니다
     mkdir(tempPath)
     opt.image_folder = tempPath
+    print("-"*50)
+    print(os.getcwd())
+    print("-" * 50)
     craftModel = craft_demo.loadModel()
     model = setRecognitionModel(opt)
     return craftModel,model, opt
