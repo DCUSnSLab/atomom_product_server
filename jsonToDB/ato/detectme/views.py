@@ -3,7 +3,7 @@ from django.views.decorators import gzip
 from django.http import StreamingHttpResponse
 import cv2
 import threading
-
+import os, sys
 # https://blog.miguelgrinberg.com/post/video-streaming-with-flask/page/8
 
 def home(request):
@@ -13,7 +13,8 @@ def home(request):
 
 class VideoCamera(object):
     def __init__(self):
-        import os, sys
+
+        curPath=os.getcwd()
         path=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
         print(path)
         # print(os.listdir(path))
@@ -21,7 +22,14 @@ class VideoCamera(object):
         print(path)
         sys.path.append(path)
         import demo_modifed_for_one_image_processing as ocr
+        os.chdir(path)
         craftModel, model, opt = ocr.setModel()
+        self.craftModel=craftModel
+        self.model=model
+        self.opt=opt
+        self.ocrPath=path
+        self.djangoPath=curPath
+        os.chdir(curPath)
 
 
 
@@ -33,14 +41,25 @@ class VideoCamera(object):
         self.video.release()
 
     def get_frame(self):
-        import sys
-        # sys.path.append("..")
-        # import asdfg
-        import os
-
-
-
         image = self.frame
+        imgPath = self.ocrPath+"/curImage.jpg"
+        print('-'*50)
+        print(imgPath)
+        print('-' * 50)
+        cv2.imwrite(imgPath,image)
+
+        import demo_modifed_for_one_image_processing as ocr
+
+        os.chdir(self.ocrPath)
+        img, points = ocr.craftOperation(imgPath, self.craftModel, dirPath=self.opt.image_folder)
+        texts = ocr.demo(self.opt, self.model)
+        img = ocr.putText(img, points, texts)
+        image=img
+        os.chdir(self.djangoPath)
+
+
+
+
         _, jpeg = cv2.imencode('.jpg', image)
         return jpeg.tobytes()
 

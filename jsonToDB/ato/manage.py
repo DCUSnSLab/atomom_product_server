@@ -19,8 +19,7 @@ def main():
 
 
 if __name__ == '__main__':
-    # import os, sys
-    #
+    # curPath = os.getcwd()
     # path = os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
     # print(path)
     # # print(os.listdir(path))
@@ -29,8 +28,12 @@ if __name__ == '__main__':
     # sys.path.append(path)
     # import demo_modifed_for_one_image_processing as ocr
     #
+    # os.chdir(path)
     # craftModel, model, opt = ocr.setModel()
-    #
+    # imgPath = path + "/curImage.jpg"
+    # img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
+    # os.chdir(curPath)
+
 
 
     main()
