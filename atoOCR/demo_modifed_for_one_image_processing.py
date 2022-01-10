@@ -226,7 +226,7 @@ def setModel():
     craftModel = craft_demo.loadModel()
     model = setRecognitionModel(opt)
     return craftModel,model, opt
-def mkdir(path):
+def mkdir(path="./temps"):
     if os.path.exists(path):
         shutil.rmtree(path)
     if not os.path.exists(path):

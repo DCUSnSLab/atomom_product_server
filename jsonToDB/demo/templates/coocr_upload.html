@@ -51,12 +51,19 @@
                 {% if imgname == '' %}
                 이미지를 READ해 주세요.
                 {% else %}
-                <img src="/static/source/{{imgname}}" style="width:90%;" />
+<!--                <img src="/static/source/{{imgname}}" width="435" height="374"/>-->
+                <img src="/static/source/{{resultImgname}}" width="435" height="374"/>
                 {% endif %}
+            </td>
+            <td width="50%">
+                <pre>
+                {{resulttext}}
+                </pre>
             </td>
         </tr>
     </table>
 </div>
+
 <div style="margin:50px 0;">
     <table width="100%">
         <tr>
