@@ -124,7 +124,8 @@ def saveResult_modified(img_file, img, boxes, dirname='./result/', verticals=Non
             croped = src[arr[0][0][1]:arr[2][0][1], arr[0][0][0]:arr[2][0][0]]
             # y1,y2=(arr[0][0][1],arr[2][0][1])
             # x1,x2=(arr[0][0][0]<arr[2][0][0])
-            points.append((arr[0][0][1],arr[0][0][0]))
+            # points.append((arr[0][0][1],arr[0][0][0]))
+            points.append((arr[0][0][1], arr[0][0][0],arr[2][0][1],arr[2][0][0]))
             #print(poly.reshape((-1, 1, 2)))
             # for i in poly.reshape((-1, 1, 2)):
             #     i=i[0]
