@@ -5,6 +5,8 @@ import csv
 from tqdm import tqdm
 # 매트 립스틱 [칠리]
 
+
+
 def check_renewal(curJson):
     '''
         이거는 리뉴얼된 제품일 경우 안 된 제품과 형태가 다릅니다 따라서 이를 구분해주기 위해 동작합니다
@@ -55,6 +57,7 @@ def getIngredient(file,wr,cnt):
     lis=[None for i in range(15)]
 
     for i, data in enumerate(file):
+        lis = [None for i in range(15)]
         if(len(data['Allergy']) != 0): lis[0] = data['Allergy']
         if(len(data['Twenty']) != 0): lis[1] = data['Twenty']
         if(len(data['TwentyDetail']) != 0): lis[2] = data['TwentyDetail']
@@ -103,33 +106,73 @@ def insertData(wr,cnt,lis=[]):
     cnt+=1
     return wr,cnt
     # os.system('pause')
-if __name__ == '__main__':
-    # sd=" "
-    # if(len(sd) != 0): result=sd
-    # print(result)
-    f = open('data.csv', 'w', newline='')
-    wr=csv.writer(f)
-    base_path = 'Z:/2021학년도/프로젝트/아토맘/데이터/일반/립메이크업/립스틱\jsonFiles/'
-    curList=os.listdir(base_path)
-    cnt=1
-    wr,cnt=insertData(wr,cnt)
-    for i,data in enumerate(curList):
-        with open( os.path.join(base_path,data), 'r', encoding='UTF-8-sig') as f:
-            curJson=json.load(f)
-        print(curJson.keys())
-        brand=curJson['brand']
-        pName=curJson['productName']
 
-        curJson=curJson['ingredients']
-        print(pName,len(curJson))
-        ingredient_processing(curJson,wr,cnt)
+def getDirPath_sub1(path):
+    dirlist=[]
+    for filename in os.listdir(path):
+        # print(filename)
+        if os.path.isdir(os.path.join(path, filename)) == True:
+            dirlist.append(os.path.join(path, filename))
+    return dirlist
+
+def getDirPath(bashPath):
+    resultList=[]
+    dirlist = []
+
+    for filename in os.listdir(base_path):
+        if os.path.isdir(os.path.join(base_path, filename)) == True:
+            dirlist.append(os.path.join(base_path, filename))
+    for path in dirlist:
+        # print(path)
+        tempList=getDirPath_sub1(path)
+        for path2 in tempList:
+            tempList2=getDirPath_sub1(path2)
+
+            for path3 in tempList2:
+                tempList3 = getDirPath_sub1(path3)
+                # print(tempList3)
+                resultList+=tempList3
+    return resultList
+
+    # print(dirlist)
+
+def operation(base_path):
+    f = open('data.csv', 'w', newline='',encoding='UTF-8-sig')
+    wr = csv.writer(f)
+    cnt = 1
+    wr, cnt = insertData(wr, cnt)
+
+    dirList=getDirPath(base_path)
+    # print(dirList)
+    # for i,data in enumerate(dirList):
+    #     print(i,data)
+    count=1
+    for path in tqdm(dirList):
+    # for path in dirList:
+    #     if(count<87):
+    #         count+=1
+    #         continue
+        # print(path)
+        # path=dirList[39]
+        # print(path)
+        curList = os.listdir(path)
+        # print(curList)
+
+        for i, data in enumerate(curList):
+            with open(os.path.join(path, data), 'r', encoding='UTF-8-sig') as f:
+                curJson = json.load(f)
+            # print(curJson.keys())
+            brand = curJson['brand']
+            pName = curJson['productName']
+            # print(brand,pName)
+            curJson = curJson['ingredients']
+            # print(path,pName, len(curJson))
+            ingredient_processing(curJson, wr, cnt)
+            # break
         # break
-
-
-    f.close
-
-        # print(curJson)
-
-        # print(curJson[1])
+        f.close
+if __name__ == '__main__':
+    base_path = 'Z:/2021학년도/프로젝트/아토맘/데이터/'
+    operation(base_path)
 
 
