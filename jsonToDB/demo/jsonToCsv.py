@@ -2,6 +2,8 @@
 import os, sys
 import json
 import csv
+import time
+
 from tqdm import tqdm
 # 매트 립스틱 [칠리]
 
@@ -32,8 +34,6 @@ def check_renewal(curJson):
         check = False
     return check
 
-def getIngredient_sub(file):
-    pass
 def getIngredient(file,wr,cnt):
     '''
     Index meaning
@@ -77,11 +77,9 @@ def getIngredient(file,wr,cnt):
         if (len(data['EWG']) != 0):
             if(len(data['EWGDataAvailability']) != 0): lis[13] = data['EWGDataAvailability']
             if(len(data['EWGDataAvailabilityText']) != 0): lis[14]= data['EWGDataAvailabilityText']
-        wr,cnt=insertData(wr,cnt,lis)
+        wr,cnt=insertData_ingredients(wr,cnt,lis)
     # os.system('pause')
     # print('-'*50,'\n\n\n')
-
-
 
 def ingredient_processing(curJson,wr,cnt):
     check=check_renewal(curJson)
@@ -96,7 +94,7 @@ def ingredient_processing(curJson,wr,cnt):
         data=curJson
         getIngredient(data,wr,cnt)
 
-def insertData(wr,cnt,lis=[]):
+def insertData_ingredients(wr,cnt,lis=[]):
     if(cnt==1):
         wr.writerow([cnt, 'Allergy', 'Twenty', 'TwentyDetail', 'Korean', 'English',
                      'Forbidden', 'Purpose', 'Cosmedical', 'Limitation', 'SkinType',
@@ -134,13 +132,35 @@ def getDirPath(bashPath):
                 resultList+=tempList3
     return resultList
 
+def getDirPath2(bashPath):
+    resultList = []
+    dirlist = []
+
+    for filename in os.listdir(base_path):
+        if os.path.isdir(os.path.join(base_path, filename)) == True:
+            dirlist.append(os.path.join(base_path, filename))
+
+
+    for path in dirlist:
+        # print(path)
+        tempList = getDirPath_sub1(path)
+        for path2 in tempList:
+            tempList2 = getDirPath_sub1(path2)
+            for path3 in tempList2:
+
+                # os.system('pause')
+                tempList3 = getDirPath_sub1(path3)
+                # print(tempList3)
+                resultList += tempList3
+    return resultList
+
     # print(dirlist)
 
-def operation(base_path):
+def make_ingredients_table(base_path):
     f = open('data.csv', 'w', newline='',encoding='UTF-8-sig')
     wr = csv.writer(f)
     cnt = 1
-    wr, cnt = insertData(wr, cnt)
+    wr, cnt = insertData_ingredients(wr, cnt)
 
     dirList=getDirPath(base_path)
     # print(dirList)
@@ -171,8 +191,151 @@ def operation(base_path):
             # break
         # break
         f.close
+
+def getCategory_sub(csv_filename,curCategory):
+    f = open(csv_filename, 'r', newline='', encoding='UTF-8-sig')
+    rdr = csv.reader(f)
+    for line in rdr:
+        id, type = line
+        # print(type,curCategory)
+        if (type == curCategory):
+            curCategory=id
+            break
+    return curCategory
+
+def getCategory(base_path,cur_path):
+    small=""
+    medium=""
+    large=""
+    cur_path=cur_path.replace(base_path,"")
+    # print(cur_path)
+    cur_path = cur_path.replace("\\jsonFiles", "")
+    # print(cur_path)
+    large,medium,small=cur_path.split('\\')
+    # print(large, medium, small)
+    large = large.replace('_', '/')
+    medium = medium.replace('_', '/')
+    small = small.replace('_', '/')
+    # print(large,medium,small)
+    small = getCategory_sub('./small.csv', small)
+    medium = getCategory_sub('./medium.csv', medium)
+    large = getCategory_sub('./large.csv', large)
+    # print(large,medium,small)
+
+    # os.system('pause')
+    return large,medium,small
+
+def make_product_table(base_path):
+    f = open('product_raw.csv', 'w', newline='',encoding='UTF-8-sig')
+    wr = csv.writer(f)
+    cnt = 1
+    # wr, cnt = insertData(wr, cnt)
+    wr.writerow(['id', 'brand', 'name', 'barcode', 'large', 'medium', 'small'])
+    dirList=getDirPath2(base_path)
+    pathCount=0
+    for path in tqdm(dirList):
+    # for path in (dirList):
+        curList = os.listdir(path)
+        large,medium,small=getCategory(base_path,path)
+        # if(small!="75"):
+        #     # print(small)
+        #     continue
+        # else:
+        #     print(small)
+        # print(large,medium,small,'222')
+        # os.system('pause')
+        for i, data in enumerate(curList):
+            with open(os.path.join(path, data), 'r', encoding='UTF-8-sig') as f:
+                curJson = json.load(f)
+            # print(curJson.keys())
+            brand = curJson['brand']
+            pName = curJson['productName']
+            # print(brand,pName)
+            curJson = curJson['ingredients']
+            check = check_renewal(curJson)
+            if (check == True):
+                for i, data in enumerate(curJson):
+                    # wr.writerow(['id', 'brand', 'name', 'barcode', 'small', 'medium', 'large'])
+                    if(i==0):
+                        wr.writerow([cnt, brand, pName, None , large, medium, small])
+                    else:
+                        wr.writerow([cnt, brand, pName +'ℜ'+str(i), None, large, medium, small])
+                    cnt+=1
+
+            else:
+                wr.writerow([cnt, brand, pName, None , large, medium, small])
+                cnt += 1
+
+            # break
+        # if(pathCount>3):
+        #     break
+        # pathCount+=1
+        f.close
+
+def make_PIR_table_sub1(file):
+    templis = []
+    for _, data in enumerate(file):
+        templis.append(data['Korean'])
+    return templis
+
+def make_PIR_table(base_path):
+    f = open('PIRelation.csv', 'w', newline='',encoding='UTF-8-sig')
+    wr = csv.writer(f)
+    cnt = 1
+    # wr, cnt = insertData(wr, cnt)
+    wr.writerow(['id', 'product_id', 'ingredients_id'])
+    dirList=getDirPath2(base_path)
+    pathCount=0
+    for path in tqdm(dirList):
+    # for path in (dirList):
+        print(path)
+        curList = os.listdir(path)
+        for i, data in enumerate(curList):
+            with open(os.path.join(path, data), 'r', encoding='UTF-8-sig') as f:
+                curJson = json.load(f)
+            # print(curJson.keys())
+            brand = curJson['brand']
+            pName = curJson['productName']
+
+            print(brand,pName)
+            curJson = curJson['ingredients']
+            "여기서부터 ingprocessing"
+            check = check_renewal(curJson)
+            if (check == True):
+                for i, data in enumerate(curJson):
+                    file = data['ingredients']
+
+                    if(i==0):
+                        templis = make_PIR_table_sub1(file)
+                        print(templis)
+                        # wr.writerow([cnt, brand, pName, None , large, medium, small])
+                        pass
+                    else:
+                        templis = make_PIR_table_sub1(file)
+                        print(templis)
+                        # wr.writerow([cnt, brand, pName +'ℜ'+str(i), None, large, medium, small])
+                    cnt+=1
+
+
+            else:
+                templis = make_PIR_table_sub1(file)
+                print(templis)
+                # wr.writerow([cnt, brand, pName, None , large, medium, small])
+                cnt += 1
+
+            print('*'*50)
+        break
+        # if(pathCount>3):
+        #     break
+        # pathCount+=1
+        f.close
+
 if __name__ == '__main__':
     base_path = 'Z:/2021학년도/프로젝트/아토맘/데이터/'
-    operation(base_path)
+    make_PIR_table(base_path)
 
+
+
+
+    # print(numberToBase(1000, 16))
 

@@ -1,21 +1,21 @@
 import csv
 import os
 import django
+from tqdm import tqdm
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
-print(os.getcwd())
+# print(os.getcwd())
 
 def insertProductLargeCategory(csvPath):
     from atomom.models import ProductLargeCategory
     CSV_PATH = csvPath
     with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
         data_reader = csv.DictReader(csvfile)
-        for row in data_reader:
-            print(row)
+        for row in tqdm(data_reader):
+            # print(row)
             ProductLargeCategory.objects.create( id = row['id'],
-                                                 type = row['type'],
-                                                 desc = row['desc'], )
+                                                 type = row['type'],)
 
 def insertProductMediumCategory(csvPath):
     from atomom.models import ProductMediumCategory
@@ -23,43 +23,52 @@ def insertProductMediumCategory(csvPath):
     CSV_PATH = csvPath
     with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
         data_reader = csv.DictReader(csvfile)
-        for row in data_reader:
-            print(row)
+        for row in tqdm(data_reader):
+            # print(row)
             ProductMediumCategory.objects.create( id = row['id'],
-                                                  type = row['type'],
-                                                  desc = row['desc'],
-                                                  large_id_id=row['large_id'], )
+                                                  type = row['type'], )
 
 def insertProductSmallCategory(csvPath):
     from atomom.models import ProductSmallCategory
     CSV_PATH = csvPath
     with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
         data_reader = csv.DictReader(csvfile)
-        for row in data_reader:
-            print(row)
+        for row in tqdm(data_reader):
+            # print(row)
             ProductSmallCategory.objects.create(id=row['id'],
-                                                 type=row['type'],
-                                                 desc=row['desc'],
-                                                 medium_id_id=row['medium_id'], )
+                                                 type=row['type'],)
 
 def insertProduct(csvPath):
     from atomom.models import Product
     CSV_PATH = csvPath
     with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
         data_reader = csv.DictReader(csvfile)
-        for row in data_reader:
-            print(row)
+        for row in tqdm(data_reader):
+            # print(row)
             Product.objects.create(id=row['id'],
-                                   small_id_id=row['small_id'],
                                    brand=row['brand'],
                                    name=row['name'],
                                    barcode=row['barcode'],)
+def insertCategoryRelation(csvPath):
+    from atomom.models import CategoryRelation
+
+    CSV_PATH = csvPath
+    with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
+        data_reader = csv.DictReader(csvfile)
+        for row in tqdm(data_reader):
+            # print(row)
+            CategoryRelation.objects.create( id = row['id'],
+                                                  product_id_id=row['product_id'],
+                                                  large_id_id=row['large_id'],
+                                                  medium_id_id=row['medium_id'],
+                                                  small_id_id=row['small_id'], )
+
 def insertIngredient(csvPath):
     from atomom.models import Ingredients
     CSV_PATH = csvPath
     with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
         data_reader = csv.DictReader(csvfile)
-        for row in data_reader:
+        for row in tqdm(data_reader):
             # print(row)
             Ingredients.objects.create(id=row['id'],
                                       korean=row['korean'],
@@ -98,5 +107,9 @@ if __name__ == '__main__':
     csvPath = './product.csv'
     insertProduct(csvPath)
 
-    csvPath = './data_result.csv'
+    csvPath = './categoryRelation.csv'
+    insertCategoryRelation(csvPath)
+    #
+    csvPath = './ingredients.csv'
     insertIngredient(csvPath)
+    pass
