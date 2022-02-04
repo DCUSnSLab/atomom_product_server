@@ -2,12 +2,18 @@ from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 # Create your models here.
 
-class Product(models.Model): #사람
+class Product(models.Model):
     id=models.AutoField(help_text="Product ID", blank=False, null=False, primary_key=True)
     brand=models.CharField(help_text="Product Brand", max_length=255, blank=False, null=False)
     name=models.CharField(help_text="Product Name", max_length=255, blank=False, null=False)
+    subName = models.CharField(help_text="Product Name", max_length=255, blank=False, null=False)
     barcode=models.CharField(help_text="Product Barcode", max_length=13, blank=False)
-    # sqlite는 varchar에 길이 제약조건이 없네요
+class SubProduct(models.Model):
+    id=models.AutoField(help_text="SubProduct ID", blank=False, null=False, primary_key=True)
+    product_id = models.ForeignKey('Product', on_delete=models.CASCADE, db_column="product_id")
+    subName = models.CharField(help_text="Product Name", max_length=255, blank=False, null=False)
+    barcode=models.CharField(help_text="Product Barcode", max_length=13, blank=False)
+
 
 class Ingredients(models.Model):
     id = models.AutoField(help_text="Ingredient ID", primary_key=True, editable=False)
@@ -52,9 +58,17 @@ class ProductSmallCategory(models.Model):
     type = models.CharField(help_text="Product Small Type Name", max_length=10, blank=False)
 
 
-class CategoryRelation(models.Model):
+class PCRelation(models.Model):
     id = models.AutoField(help_text="Product Ingredients mapping table", blank=False, null=False, primary_key=True, )
     product_id = models.ForeignKey('Product', on_delete=models.CASCADE, db_column="product_id")
+    large_id = models.ForeignKey('ProductLargeCategory', on_delete=models.CASCADE, db_column="large_id")
+    medium_id = models.ForeignKey('ProductMediumCategory', on_delete=models.CASCADE, db_column="medium_id")
+    small_id = models.ForeignKey('ProductSmallCategory', on_delete=models.CASCADE, db_column="small_id")
+    # product_id = models.OneToOneField('Product', on_delete=models.CASCADE, db_column="product_id")
+
+class SPCRelation(models.Model):
+    id = models.AutoField(help_text="Product Ingredients mapping table", blank=False, null=False, primary_key=True, )
+    subproduct_id = models.ForeignKey('SubProduct', on_delete=models.CASCADE, db_column="subproduct_id")
     large_id = models.ForeignKey('ProductLargeCategory', on_delete=models.CASCADE, db_column="large_id")
     medium_id = models.ForeignKey('ProductMediumCategory', on_delete=models.CASCADE, db_column="medium_id")
     small_id = models.ForeignKey('ProductSmallCategory', on_delete=models.CASCADE, db_column="small_id")
@@ -64,8 +78,11 @@ class CategoryRelation(models.Model):
 class PIRelation(models.Model):
     id = models.AutoField(help_text="Product Ingredients mapping table", blank=False, null=False, primary_key=True, )
     product_id = models.ForeignKey('Product', on_delete=models.CASCADE, db_column="product_id")
-    large_id = models.ForeignKey('ProductLargeCategory', on_delete=models.CASCADE, db_column="large_id")
-    medium_id = models.ForeignKey('ProductMediumCategory', on_delete=models.CASCADE, db_column="medium_id")
-    small_id = models.ForeignKey('ProductSmallCategory', on_delete=models.CASCADE, db_column="small_id")
-    # product_id = models.OneToOneField('Product', on_delete=models.CASCADE, db_column="product_id")
+    ingredients_id = models.ForeignKey('Ingredients', on_delete=models.CASCADE, db_column="ingredients_id")
+
+class SPIRelation(models.Model):
+    id = models.AutoField(help_text="Product Ingredients mapping table", blank=False, null=False, primary_key=True, )
+    subproduct_id = models.ForeignKey('SubProduct', on_delete=models.CASCADE, db_column="subproduct_id")
+    ingredients_id = models.ForeignKey('Ingredients', on_delete=models.CASCADE, db_column="ingredients_id")
+
 

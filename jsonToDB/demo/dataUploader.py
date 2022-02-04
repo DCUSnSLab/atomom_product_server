@@ -48,21 +48,46 @@ def insertProduct(csvPath):
             Product.objects.create(id=row['id'],
                                    brand=row['brand'],
                                    name=row['name'],
+                                   subName=row['subName'],
                                    barcode=row['barcode'],)
-def insertCategoryRelation(csvPath):
-    from atomom.models import CategoryRelation
+def insertSubProduct(csvPath):
+    from atomom.models import SubProduct
+    CSV_PATH = csvPath
+    with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
+        data_reader = csv.DictReader(csvfile)
+        for row in tqdm(data_reader):
+            # print(row)
+            SubProduct.objects.create(id=row['id'],
+                                   product_id_id=row['product_id'],
+                                   subName=row['subName'],
+                                   barcode=row['barcode'],)
+def PCRelation(csvPath):
+    from atomom.models import PCRelation
 
     CSV_PATH = csvPath
     with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
         data_reader = csv.DictReader(csvfile)
         for row in tqdm(data_reader):
             # print(row)
-            CategoryRelation.objects.create( id = row['id'],
-                                                  product_id_id=row['product_id'],
+            PCRelation.objects.create(id=row['id'],
+                                      product_id_id=row['product_id'],
+                                      large_id_id=row['large_id'],
+                                      medium_id_id=row['medium_id'],
+                                      small_id_id=row['small_id'], )
+def SPCRelation(csvPath):
+    from atomom.models import SPCRelation
+
+    CSV_PATH = csvPath
+
+    with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
+        data_reader = csv.DictReader(csvfile)
+        for row in tqdm(data_reader):
+            # print(row)
+            SPCRelation.objects.create( id = row['id'],
+                                                  subproduct_id_id=row['subproduct_id'],
                                                   large_id_id=row['large_id'],
                                                   medium_id_id=row['medium_id'],
                                                   small_id_id=row['small_id'], )
-
 def insertIngredient(csvPath):
     from atomom.models import Ingredients
     CSV_PATH = csvPath
@@ -70,46 +95,82 @@ def insertIngredient(csvPath):
         data_reader = csv.DictReader(csvfile)
         for row in tqdm(data_reader):
             # print(row)
+            # print(row)
             Ingredients.objects.create(id=row['id'],
-                                      korean=row['korean'],
-                                      oldKorean=row['oldKorean'],
-                                      english=row['English'],
-                                      oldEnglish=row['oldEnglish'],
-                                      hazardScoreMin=row['hazardScoreMin'],
-                                      hazardScoreMax=row['hazardScoreMax'],
-                                      dataAvailability=row['dataAvailability'],
-                                      allergy=row['allergy'],
-                                      twenty=row['twenty'],
-                                      twentyDetail=row['twentyDetail'],
-                                      goodForOily=row['goodForOily'],
-                                      goodForSensitive=row['goodForSensitive'],
-                                      goodForDry=row['goodForDry'],
-                                      badForOily=row['badForOily'],
-                                      badForSensitive=row['badForSensitive'],
-                                      badForDry=row['badForDry'],
-                                      skinRemarkG=row['skinRemarkG'],
-                                      skinRemarkB=row['skinRemarkB'],
-                                      Cosmedical=row['Cosmedical'],
-                                      purpose=row['purpose'],
-                                      limitation=row['limitation'],
-                                      forbidden=row['forbidden'], )
+                                      korean=row['korean'].replace('@',','),
+                                      oldKorean=row['oldKorean'].replace('@',','),
+                                      english=row['English'].replace('@',','),
+                                      oldEnglish=row['oldEnglish'].replace('@',','),
+                                      hazardScoreMin=row['hazardScoreMin'].replace('@',','),
+                                      hazardScoreMax=row['hazardScoreMax'].replace('@',','),
+                                      dataAvailability=row['dataAvailability'].replace('@',','),
+                                      allergy=row['allergy'].replace('@',','),
+                                      twenty=row['twenty'].replace('@',','),
+                                      twentyDetail=row['twentyDetail'].replace('@',','),
+                                      goodForOily=row['goodForOily'].replace('@',','),
+                                      goodForSensitive=row['goodForSensitive'].replace('@',','),
+                                      goodForDry=row['goodForDry'].replace('@',','),
+                                      badForOily=row['badForOily'].replace('@',','),
+                                      badForSensitive=row['badForSensitive'].replace('@',','),
+                                      badForDry=row['badForDry'].replace('@',','),
+                                      skinRemarkG=row['skinRemarkG'].replace('@',','),
+                                      skinRemarkB=row['skinRemarkB'].replace('@',','),
+                                      Cosmedical=row['Cosmedical'].replace('@',','),
+                                      purpose=row['purpose'].replace('@',','),
+                                      limitation=row['limitation'].replace('@',','),
+                                      forbidden=row['forbidden'].replace('@',','), )
+
+def insertPIRelation(csvPath):
+    from atomom.models import PIRelation
+    CSV_PATH = csvPath
+    with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
+        data_reader = csv.DictReader(csvfile)
+        for row in tqdm(data_reader):
+            PIRelation.objects.create( id = row['id'],
+                                       product_id_id=row['product_id'],
+                                       ingredients_id_id=row['ingredients_id'],)
+def insertSPIRelation(csvPath):
+    from atomom.models import SPIRelation
+    CSV_PATH = csvPath
+    with open(CSV_PATH, newline='', encoding="utf-8-sig") as csvfile:
+        data_reader = csv.DictReader(csvfile)
+        for row in tqdm(data_reader):
+            SPIRelation.objects.create( id = row['id'],
+                                       subproduct_id_id=row['subproduct_id'],
+                                       ingredients_id_id=row['ingredients_id'],)
+
+
 
 if __name__ == '__main__':
-    csvPath='./Large.csv'
-    insertProductLargeCategory(csvPath)
+    # csvPath='./tables/Large.csv'
+    # insertProductLargeCategory(csvPath)
+    # #
+    # csvPath = './tables/medium.csv'
+    # insertProductMediumCategory(csvPath)
     #
-    csvPath = './medium.csv'
-    insertProductMediumCategory(csvPath)
-
-    csvPath = './small.csv'
-    insertProductSmallCategory(csvPath)
-
-    csvPath = './product.csv'
-    insertProduct(csvPath)
-
-    csvPath = './categoryRelation.csv'
-    insertCategoryRelation(csvPath)
+    # csvPath = './tables/small.csv'
+    # insertProductSmallCategory(csvPath)
     #
-    csvPath = './ingredients.csv'
-    insertIngredient(csvPath)
+    # csvPath = './tables/product.csv'
+    # insertProduct(csvPath)
+    #
+    # csvPath = './tables/subproduct.csv'
+    # insertSubProduct(csvPath)
+
+    # csvPath = './tables/PCRelation.csv'
+    # PCRelation(csvPath)
+
+    # csvPath = './tables/SPCRelation.csv'
+    # SPCRelation(csvPath)
+    #
+    # csvPath = './tables/ingredients.csv'
+    # insertIngredient(csvPath)
+
+    csvPath = './tables/PIRelation.csv'
+    insertPIRelation(csvPath)
+
+    csvPath = './tables/SPIRelation.csv'
+    insertSPIRelation(csvPath)
+
+
     pass
