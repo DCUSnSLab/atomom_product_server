@@ -3,9 +3,13 @@ import os, sys
 import json
 import csv
 import time
-
+import copy
 from tqdm import tqdm
 # 매트 립스틱 [칠리]
+import django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+from atomom.models import Ingredients as idb
 
 
 
@@ -58,26 +62,28 @@ def getIngredient(file,wr,cnt):
 
     for i, data in enumerate(file):
         lis = [None for i in range(15)]
-        if(len(data['Allergy']) != 0): lis[0] = data['Allergy']
-        if(len(data['Twenty']) != 0): lis[1] = data['Twenty']
-        if(len(data['TwentyDetail']) != 0): lis[2] = data['TwentyDetail']
+        if(len(data['Allergy']) != 0): lis[0] = data['Allergy'].strip('\"').replace(',','@')
+        if(len(data['Twenty']) != 0): lis[1] = data['Twenty'].strip('\"').replace(',','@')
+        if(len(data['TwentyDetail']) != 0): lis[2] = data['TwentyDetail'].strip('\"').replace(',','@')
 
-        if(len(data['Korean']) != 0): lis[3] = data['Korean']
-        if(len(data['English']) != 0): lis[4] = data['English']
-        if(len(data['Forbidden']) != 0): lis[5] = data['Forbidden']
-        if(len(data['Purpose']) != 0): lis[6] = data['Purpose']
-        if(len(data['Cosmedical']) != 0): lis[7] = data['Cosmedical']
-        if(len(data['Limitation']) != 0): lis[8] = data['Limitation']
-        if(len(data['SkinType']) != 0): lis[9] = data['SkinType']
-        if(len(data['SkinRemarkB']) != 0): lis[10] = data['SkinRemarkB']
-        if(len(data['SkinRemarkG']) != 0): lis[11] = data['SkinRemarkG']
-        if(len(data['EWG']) != 0): lis[12] = data['EWG']
+        if(len(data['Korean']) != 0): lis[3] = data['Korean'].strip('\"').replace(',','@')
+        # print("\"bek",data['Korean'],"afk",data['Korean'].strip('\"'),"lis[3]",lis[3])
+        if(len(data['English']) != 0): lis[4] = data['English'].strip('\"').replace(',','@')
+        if(len(data['Forbidden']) != 0): lis[5] = data['Forbidden'].strip('\"').replace(',','@')
+        if(len(data['Purpose']) != 0): lis[6] = data['Purpose'].strip('\"').replace(',','@')
+        if(len(data['Cosmedical']) != 0): lis[7] = data['Cosmedical'].strip('\"').replace(',','@')
+        if(len(data['Limitation']) != 0): lis[8] = data['Limitation'].strip('\"').replace(',','@')
+        if(len(data['SkinType']) != 0): lis[9] = data['SkinType'].strip('\"').replace(',','@')
+        if(len(data['SkinRemarkB']) != 0): lis[10] = data['SkinRemarkB'].strip('\"').replace(',','@')
+        if(len(data['SkinRemarkG']) != 0): lis[11] = data['SkinRemarkG'].strip('\"').replace(',','@')
+        if(len(data['EWG']) != 0): lis[12] = data['EWG'].strip('\"').replace(',','@')
 
 
         if (len(data['EWG']) != 0):
             if(len(data['EWGDataAvailability']) != 0): lis[13] = data['EWGDataAvailability']
             if(len(data['EWGDataAvailabilityText']) != 0): lis[14]= data['EWGDataAvailabilityText']
         wr,cnt=insertData_ingredients(wr,cnt,lis)
+        # os.system('pause')
     # os.system('pause')
     # print('-'*50,'\n\n\n')
 
@@ -96,11 +102,11 @@ def ingredient_processing(curJson,wr,cnt):
 
 def insertData_ingredients(wr,cnt,lis=[]):
     if(cnt==1):
-        wr.writerow([cnt, 'Allergy', 'Twenty', 'TwentyDetail', 'Korean', 'English',
+        wr.writerow(['id', 'Allergy', 'Twenty', 'TwentyDetail', 'Korean', 'English',
                      'Forbidden', 'Purpose', 'Cosmedical', 'Limitation', 'SkinType',
                      'SkinRemarkB', 'SkinRemarkG', 'EWG', 'EWGDataAvailability', 'EWGDataAvailabilityText'])
     else:
-        wr.writerow([cnt]+lis)
+        wr.writerow([1]+lis)
     cnt+=1
     return wr,cnt
     # os.system('pause')
@@ -157,7 +163,7 @@ def getDirPath2(bashPath):
     # print(dirlist)
 
 def make_ingredients_table(base_path):
-    f = open('data.csv', 'w', newline='',encoding='UTF-8-sig')
+    f = open('data_raw.csv', 'w', newline='',encoding='UTF-8-sig')
     wr = csv.writer(f)
     cnt = 1
     wr, cnt = insertData_ingredients(wr, cnt)
@@ -217,9 +223,9 @@ def getCategory(base_path,cur_path):
     medium = medium.replace('_', '/')
     small = small.replace('_', '/')
     # print(large,medium,small)
-    small = getCategory_sub('./small.csv', small)
-    medium = getCategory_sub('./medium.csv', medium)
-    large = getCategory_sub('./large.csv', large)
+    small = getCategory_sub('./tables/small.csv', small)
+    medium = getCategory_sub('./tables/medium.csv', medium)
+    large = getCategory_sub('./tables/large.csv', large)
     # print(large,medium,small)
 
     # os.system('pause')
@@ -230,7 +236,9 @@ def make_product_table(base_path):
     wr = csv.writer(f)
     cnt = 1
     # wr, cnt = insertData(wr, cnt)
-    wr.writerow(['id', 'brand', 'name', 'barcode', 'large', 'medium', 'small'])
+    product_id=1
+    subProduct_id=1
+    wr.writerow(['product_id', 'subProduct_id', 'brand', 'name','subName', 'barcode', 'large', 'medium', 'small'])
     dirList=getDirPath2(base_path)
     pathCount=0
     for path in tqdm(dirList):
@@ -251,20 +259,30 @@ def make_product_table(base_path):
             brand = curJson['brand']
             pName = curJson['productName']
             # print(brand,pName)
+            # print(curJson.keys())
             curJson = curJson['ingredients']
+            # print(curJson)
+
+
             check = check_renewal(curJson)
             if (check == True):
                 for i, data in enumerate(curJson):
+                    # j = data[0]
+                    subName=data['subProductName']
+                    # print("name: ",pName,"subName: ",subName)
+                    # os.system('pause')
+
                     # wr.writerow(['id', 'brand', 'name', 'barcode', 'small', 'medium', 'large'])
                     if(i==0):
-                        wr.writerow([cnt, brand, pName, None , large, medium, small])
+                        wr.writerow([product_id,-30, brand, pName,subName, None , large, medium, small])
                     else:
-                        wr.writerow([cnt, brand, pName +'ℜ'+str(i), None, large, medium, small])
-                    cnt+=1
+                        wr.writerow([product_id,subProduct_id, brand, pName,subName, None, large, medium, small])
+                        subProduct_id+=1
 
+                product_id += 1
             else:
-                wr.writerow([cnt, brand, pName, None , large, medium, small])
-                cnt += 1
+                wr.writerow([product_id,-30, brand, pName,None, None , large, medium, small])
+                product_id+=1
 
             # break
         # if(pathCount>3):
@@ -277,63 +295,249 @@ def make_PIR_table_sub1(file):
     for _, data in enumerate(file):
         templis.append(data['Korean'])
     return templis
+def make_PIR_table_sub2(lis):
+    # '''
+    # 아래껀 db 이용
+    # '''
+    # resultLis=copy.deepcopy(lis)
+    # resultIdLis=copy.deepcopy(lis)
+    # for i, data in enumerate(lis):
+    #     korean=data
+    #     # print("before",korean)
+    #
+    #     # new[1]=korean
+    #     if("(구명칭)" in korean):
+    #         # print(korean)
+    #         korean=korean.split(';',1)
+    #         if(len(korean)>=2):
+    #             korean = korean[0]
+    #         else:
+    #             korean=korean[0].replace('(구명칭)','')
+    #     # print("after",korean)
+    #     # cur=idb.objects.first().korean
+    #     cur = idb.objects.filter(korean__contains  = korean)
+    #     id= "ddddd"
+    #     text="dddddd"
+    #     for data in cur:
+    #         # print(data.id,data.korean)
+    #         if(data.korean==korean):
+    #             resultIdLis[i]=data.id
+    #             # resultLis[i]=data.korean
+    #             break
+    # return resultIdLis
+    resultLis = copy.deepcopy(lis)
+    resultIdLis = copy.deepcopy(lis)
+
+    for i, data in enumerate(lis):
+        korean = data
+        # print("before",korean)
+
+        # new[1]=korean
+        if ("(구명칭)" in korean):
+            # print(korean)
+            korean = korean.split(';', 1)
+            if (len(korean) >= 2):
+                korean = korean[0]
+            else:
+                korean = korean[0].replace('(구명칭)', '')
+        korean = korean.rstrip()
+        korean = korean.lstrip()
+
+        # print("after",korean)
+        # cur=idb.objects.first().korean
+        korean = korean.strip('\"').replace(',', '@')
+        f = open("./tables/ingredients.csv", 'r', newline='', encoding='UTF-8-sig')
+        rdr = csv.reader(f)
+        k = 1
+        check = False
+        for line in rdr:
+            if (k == 1):
+                k += 1
+                continue
+            id = line[0]
+            ikorea = line[1].lstrip().rstrip()
+            if (ikorea == korean):
+                resultIdLis[i] = id
+                check = True
+                break
+
+        assert check == True, '뭔가 잘못됨\'' + korean + '\'\'' + ikorea + '\'' + str(id)
+    # os.system('pause')
+    return resultIdLis
+    # return re
 
 def make_PIR_table(base_path):
-    f = open('PIRelation.csv', 'w', newline='',encoding='UTF-8-sig')
+    f = open('PIR_raw2.csv', 'w', newline='', encoding='UTF-8-sig')
     wr = csv.writer(f)
     cnt = 1
     # wr, cnt = insertData(wr, cnt)
-    wr.writerow(['id', 'product_id', 'ingredients_id'])
-    dirList=getDirPath2(base_path)
-    pathCount=0
+    product_id = 1
+    subProduct_id = 1
+    wr.writerow(['id1','product_id', 'ingredients_id','id2','subproduct_id', 'ingredients_id'])
+    dirList = getDirPath2(base_path)
+    pathCount = 0
+    id=1
+    for path in tqdm(dirList):
+        # if(cnt<26):
+        #     cnt+=1
+        #     continue
+    # for path in (dirList):
+        curList = os.listdir(path)
+        # large, medium, small = getCategory(base_path, path)
+        for i, data in enumerate(curList):
+            # if(product_id<4641):
+            #     print("product_id",product_id)
+            #     product_id+=1
+            #     continue
+            with open(os.path.join(path, data), 'r', encoding='UTF-8-sig') as f:
+                curJson = json.load(f)
+            # print(curJson.keys())
+
+            brand = curJson['brand']
+            pName = curJson['productName']
+            # print(brand,pName)
+            # print(curJson.keys())
+            curJson = curJson['ingredients']
+            # print(curJson)
+            # print(product_id,pName)
+            check = check_renewal(curJson)
+            if (check == True):
+                for i, data in enumerate(curJson):
+                    # j = data[0]
+                    subName = data['subProductName']
+                    # print("name: ",pName,"subName: ",subName)
+                    # os.system('pause')
+
+                    # wr.writerow(['id', 'brand', 'name', 'barcode', 'small', 'medium', 'large'])
+                    data=data['ingredients']
+                    if (i == 0):
+
+                        # print("*" * 80)
+                        # print(path,pName)
+                        ingredients=make_PIR_table_sub1(data)
+                        # print("main",ingredients)
+                        tempLis=make_PIR_table_sub2(ingredients)
+                        # print(tempLis)
+                        for ing_id in tempLis:
+                            wr.writerow([id,product_id,ing_id])
+                            id+=1
+                    else:
+                        #여기만 서브
+                        # print("*" * 80)
+                        # print(path, pName)
+                        # print("sub", make_PIR_table_sub1(data))
+                        # ingredients = make_PIR_table_sub1(data)
+                        # print("main",ingredients)
+                        # tempLis = make_PIR_table_sub2(ingredients)
+                        # for ing_id in tempLis:
+                        #     wr.writerow([300, subProduct_id, ing_id,pName,subName])
+                        # wr.writerow([product_id, subProduct_id, brand, pName, subName, None, large, medium, small])
+                        # subProduct_id += 1
+                        pass
+
+                product_id += 1
+            else:
+                # print("*"*80)
+                # print(path, pName)
+                # print("main", make_PIR_table_sub1(curJson))
+                ingredients = make_PIR_table_sub1(curJson)
+                # print("main",ingredients)
+                tempLis = make_PIR_table_sub2(ingredients)
+                for ing_id in tempLis:
+                    wr.writerow([id, product_id, ing_id])
+                    id+=1
+                # wr.writerow([product_id, -30, brand, pName, None, None, large, medium, small])
+                product_id += 1
+            # if(pathCount>3):
+            #     break
+            # pathCount+=1
+            # os.system('pause')
+    f.close
+
+def make_SPIR_table(base_path):
+    f = open('SPIR_raw.csv', 'w', newline='', encoding='UTF-8-sig')
+    wr = csv.writer(f)
+    cnt = 1
+    # wr, cnt = insertData(wr, cnt)
+    product_id = 1
+    subProduct_id = 1
+    wr.writerow(['id1','product_id', 'ingredients_id','id2','subproduct_id', 'ingredients_id'])
+    dirList = getDirPath2(base_path)
+    pathCount = 0
+    id=1
     for path in tqdm(dirList):
     # for path in (dirList):
-        print(path)
         curList = os.listdir(path)
+        large, medium, small = getCategory(base_path, path)
         for i, data in enumerate(curList):
             with open(os.path.join(path, data), 'r', encoding='UTF-8-sig') as f:
                 curJson = json.load(f)
             # print(curJson.keys())
+
             brand = curJson['brand']
             pName = curJson['productName']
-
-            print(brand,pName)
+            # print(brand,pName)
+            # print(curJson.keys())
             curJson = curJson['ingredients']
-            "여기서부터 ingprocessing"
+            # print(curJson)
+
             check = check_renewal(curJson)
             if (check == True):
                 for i, data in enumerate(curJson):
-                    file = data['ingredients']
+                    # j = data[0]
+                    subName = data['subProductName']
+                    # print("name: ",pName,"subName: ",subName)
+                    # os.system('pause')
 
-                    if(i==0):
-                        templis = make_PIR_table_sub1(file)
-                        print(templis)
-                        # wr.writerow([cnt, brand, pName, None , large, medium, small])
+                    # wr.writerow(['id', 'brand', 'name', 'barcode', 'small', 'medium', 'large'])
+                    data=data['ingredients']
+                    if (i == 0):
+                        # print("*" * 80)
+                        # print(path,pName)
+                        # ingredients=make_PIR_table_sub1(data)
+                        # # print("main",ingredients)
+                        # tempLis=make_PIR_table_sub2(ingredients)
+                        # for ing_id in tempLis:
+                        #     wr.writerow([-300,product_id,ing_id,pName,subName])
                         pass
                     else:
-                        templis = make_PIR_table_sub1(file)
-                        print(templis)
-                        # wr.writerow([cnt, brand, pName +'ℜ'+str(i), None, large, medium, small])
-                    cnt+=1
+                        #여기만 서브
+                        # print("*" * 80)
+                        # print(path, pName)
+                        # print("sub", make_PIR_table_sub1(data))
+                        ingredients = make_PIR_table_sub1(data)
+                        # print("main",ingredients)
+                        tempLis = make_PIR_table_sub2(ingredients)
+                        for ing_id in tempLis:
+                            wr.writerow([id, subProduct_id, ing_id])
+                            id+=1
+                        # wr.writerow([product_id, subProduct_id, brand, pName, subName, None, large, medium, small])
+                        subProduct_id += 1
 
-
+                product_id += 1
             else:
-                templis = make_PIR_table_sub1(file)
-                print(templis)
-                # wr.writerow([cnt, brand, pName, None , large, medium, small])
-                cnt += 1
+                # print("*"*80)
+                # print(path, pName)
+                # print("main", make_PIR_table_sub1(curJson))
+                # ingredients = make_PIR_table_sub1(curJson)
+                # # print("main",ingredients)
+                # tempLis = make_PIR_table_sub2(ingredients)
+                # for ing_id in tempLis:
+                #     wr.writerow([-300, product_id, ing_id,pName,None])
+                # # wr.writerow([product_id, -30, brand, pName, None, None, large, medium, small])
+                # product_id += 1
+                pass
+            # if(pathCount>3):
+            #     break
+            # pathCount+=1
+    f.close
 
-            print('*'*50)
-        break
-        # if(pathCount>3):
-        #     break
-        # pathCount+=1
-        f.close
 
 if __name__ == '__main__':
-    base_path = 'Z:/2021학년도/프로젝트/아토맘/데이터/'
-    make_PIR_table(base_path)
-
+    base_path = 'C:/Users/dgdgk/Desktop/ddddd/'
+    # make_product_table(base_path)
+    make_SPIR_table(base_path)
+    # make_ingredients_table(base_path)
 
 
 

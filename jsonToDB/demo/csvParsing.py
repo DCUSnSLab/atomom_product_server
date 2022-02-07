@@ -55,7 +55,10 @@ def korean_oldKorean(old,new):
         # print(korean)
         korean=korean.split(';',1)
         if(len(korean)>=2):
-            new[1] = korean[0]
+            k=korean[0]
+            k=k.lstrip()
+            k=k.rstrip()
+            new[1] = k
             new[2]=korean[1].replace('(구명칭)','')
         else:
             text=korean[0].replace('(구명칭)','')
@@ -95,8 +98,8 @@ def cosmedical(old,new):
     return new
 
 if __name__ == '__main__':
-    fr = open('data_parsed.csv', 'r', newline='', encoding='UTF-8-sig')
-    fw = open('data_result.csv', 'w', newline='', encoding='UTF-8-sig')
+    fr = open('./tables/ingredients/data_sort.csv', 'r', newline='', encoding='UTF-8-sig')
+    fw = open('./tables/ingredients/ingredients_raw.csv', 'w', newline='', encoding='UTF-8-sig')
     wr = csv.writer(fw)
     rdr = csv.reader(fr)
     lis=['id','korean','oldKorean','English','oldEnglish','hazardScoreMin','hazardScoreMax',
