@@ -5,11 +5,12 @@ import os, sys
 
 from PIL import Image
 import cv2
+
+from .models import Product
+
 import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
-from atomom.models import Product
-from atomom.models import SubProduct
 curPath=os.getcwd()
 path=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
 print(path)
@@ -18,9 +19,24 @@ path=os.path.join(path,'atoOCR')
 print(path)
 sys.path.append(path)
 import demo_modifed_for_one_image_processing as ocr
+
 os.chdir(path)
 craftModel, model, opt = ocr.setModel()
 os.chdir(curPath)
+
+
+from .tests import getChunk, compData_chunk
+cur1 = list(Product.objects.all().values_list('id', flat=True))
+cur2=list(Product.objects.all().values_list('name', flat=True))
+
+
+cur = zip(cur1,cur2)
+
+# print(te[0])
+cur = sorted(list(cur),key=lambda x : len(x[1]))
+cur2 = sorted(list(Product.objects.all().values_list('name', flat=True)), key=len)
+
+lenDict=getChunk(cur2)
 def home(request):
     context = {}
     context['menutitle'] = 'HOME'
@@ -76,8 +92,8 @@ def groupby(points,texts,img):
             data = sorted(data, key=lambda x: (x[1]))
             for i in data:
                 newDatas.append(i)
-    print("-"*50)
-    print(newDatas)
+    # print("-"*50)
+    # print(newDatas)
     newTexts=""
     check=False
     bdata=0
@@ -96,11 +112,11 @@ def groupby(points,texts,img):
         r1, c1, r2, c2, t = data
         bcentroid=abs(br2-br1)+br1
         centroid=abs(r2-r1)+r1
-        print(bdata, data)
-        print("     bcentroid,centroid, rThres, int(abs(bcentroid-centroid))",bcentroid,centroid,rThres,int(abs(bcentroid-centroid)))
+        # print(bdata, data)
+        # print("     bcentroid,centroid, rThres, int(abs(bcentroid-centroid))",bcentroid,centroid,rThres,int(abs(bcentroid-centroid)))
         if(rThres>int(abs(bcentroid-centroid))):
 
-            print("     ",cThres,abs(int(c1-bc2)))
+            # print("     ",cThres,abs(int(c1-bc2)))
             if(cThres>abs(int(c1-bc2))):
                 newTexts+=' '
             else:
@@ -109,7 +125,7 @@ def groupby(points,texts,img):
             newTexts+='\n'
         newTexts+=t
         bdata=data
-    print(newTexts)
+    # print(newTexts)
     return newTexts
 
 
@@ -172,6 +188,7 @@ def coocr_upload(request):
             # print(points)
             # print(texts)
             parsedText=groupby(points,texts,img)
+
             # img = ocr.putText(img, points, texts)
             ocr.mkdir()
 
@@ -187,11 +204,44 @@ def coocr_upload(request):
             cv2.imwrite(curPath+f"./static/source/{resultImgname}",img)
 
 
+
     context['imgname'] = imgname
     context['resultImgname'] = resultImgname
     resulttext='\n'.join(resulttext)
-    print(type(resulttext))
+
     # context['resulttext'] = '\n'+resulttext
     context['resulttext'] = '\n' + parsedText
-    coocr_compare(parsedText)
+    # context['resulttext'] = parsedText
+
+    # result1 = compData_chunk(cur, lenDict, target, score=90)
+    lis=parsedText.split('\n')
+    print(lis)
+    print('*' * 50)
+
+    productList=[]
+    for i,data in enumerate(lis):
+        print(i,data)
+
+        result1 = compData_chunk(cur, lenDict, data, score=95)
+        curProduct=result1[len(result1)-1]
+        if(curProduct[2]>=70):
+            productList.append(curProduct)
+            print("     ",curProduct)
+            id = curProduct[1][0]
+            query = Product.objects.raw(
+                'select * from atomom_ingredients where id IN (select ingredients_id from atomom_pirelation where product_id=%s)',
+                [id])
+            for q in query:
+                print("         ", q.korean)
+    # for i in productList:
+    #     print(i)
+    #     id = i[0]
+    #     query = Product.objects.raw(
+    #         'select * from atomom_ingredients where id IN (select ingredients_id from atomom_pirelation where product_id=%s)',
+    #         [id])
+    #     for q in query:
+    #         print("     ",q.korean)
+
+
+
     return render(request, 'coocr_upload.html', context)
