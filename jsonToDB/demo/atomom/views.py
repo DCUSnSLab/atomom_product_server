@@ -1,9 +1,15 @@
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import render
+
 import os, sys
 
 from PIL import Image
 import cv2
+import django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+from atomom.models import Product
+from atomom.models import SubProduct
 curPath=os.getcwd()
 path=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
 print(path)
@@ -118,6 +124,21 @@ def groupby(points,texts,img):
     # print("-" * 50)
 
 
+def coocr_compare(lis):
+    lis=lis.split('\n')
+    # print(lis)
+    # for i, text in enumerate(lis):
+    #     print(text)
+    #     print(Product.objects.raw("select * from atomom_product where name like %르 몬스터%;"))
+        # cur = Product.objects.filter(name__contains=text)
+        # for data in cur:
+        #     print(data)
+        #     print(data.name)
+
+        # for _, text in enumerate(texts):
+
+
+    pass
 
 
 def coocr_upload(request):
@@ -172,4 +193,5 @@ def coocr_upload(request):
     print(type(resulttext))
     # context['resulttext'] = '\n'+resulttext
     context['resulttext'] = '\n' + parsedText
+    coocr_compare(parsedText)
     return render(request, 'coocr_upload.html', context)
