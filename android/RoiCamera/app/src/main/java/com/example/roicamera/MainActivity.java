@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    private BaseLoaderCallback mLoadreCallback = new BaseLoaderCallback(this) {
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
