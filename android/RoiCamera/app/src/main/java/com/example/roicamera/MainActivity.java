@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.annotation.TargetApi;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
@@ -230,6 +231,9 @@ public class MainActivity extends AppCompatActivity
                 Intent intent = new Intent(getApplicationContext(),RoiActivity.class);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 bmp_result.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+
+                MediaStore.Images.Media.insertImage(getContentResolver(), bmp_result, "Test" , "testimage");
+
                 byte[] byteArray = stream.toByteArray();
                 intent.putExtra("roi",byteArray);
                 startActivity(intent);
