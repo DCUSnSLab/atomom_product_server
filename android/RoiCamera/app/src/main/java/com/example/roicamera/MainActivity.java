@@ -131,8 +131,9 @@ public class MainActivity extends AppCompatActivity
 
         matInput = inputFrame.rgba();
 
-        double m_dWscale = (double)  1/3;
-        double m_dHscale = (double) 1/4;
+        // ROI size
+        double m_dWscale = (double)  1/2;
+        double m_dHscale = (double) 1/2;
 
         int mRoiWidth = (int)(matInput.size().width * m_dWscale);
         int mRoiHeight = (int)(matInput.size().height * m_dHscale);
@@ -228,7 +229,7 @@ public class MainActivity extends AppCompatActivity
 
                 Intent intent = new Intent(getApplicationContext(),RoiActivity.class);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                bmp_result.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                bmp_result.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                 byte[] byteArray = stream.toByteArray();
                 intent.putExtra("roi",byteArray);
                 startActivity(intent);
