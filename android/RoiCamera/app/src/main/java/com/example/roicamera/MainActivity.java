@@ -28,6 +28,9 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 
@@ -37,7 +40,7 @@ import static android.Manifest.permission.CAMERA;
 public class MainActivity extends AppCompatActivity
         implements CameraBridgeViewBase.CvCameraViewListener2{
 
-    private static final String TAG = "toy9910";
+    private static final String TAG = "camera";
     private Mat matInput;
     private Mat m_matRoi;
     Bitmap bmp_result;
@@ -133,7 +136,7 @@ public class MainActivity extends AppCompatActivity
         matInput = inputFrame.rgba();
 
         // ROI size
-        double m_dWscale = (double)  1/2;
+        double m_dWscale = (double)  1/4;
         double m_dHscale = (double) 1/2;
 
         int mRoiWidth = (int)(matInput.size().width * m_dWscale);
@@ -228,16 +231,82 @@ public class MainActivity extends AppCompatActivity
                 bmp_result = Bitmap.createBitmap(m_matRoi.cols(),m_matRoi.rows(),Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(m_matRoi,bmp_result);
 
-                Intent intent = new Intent(getApplicationContext(),RoiActivity.class);
+                Intent intent_img = new Intent(getApplicationContext(),RoiActivity.class);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+                new Thread(() -> {
+                    UploadFile(bmp_result);
+                }).start();
+
                 bmp_result.compress(Bitmap.CompressFormat.JPEG, 100, stream);
 
                 MediaStore.Images.Media.insertImage(getContentResolver(), bmp_result, "Test" , "testimage");
 
-                byte[] byteArray = stream.toByteArray();
-                intent.putExtra("roi",byteArray);
-                startActivity(intent);
+//                UploadFile(bmp_result);
+
+//                byte[] byteArray = stream.toByteArray();
+//                intent_img.putExtra("roi",byteArray);
+//                intent_img.putExtra("text", "test text test\n");
+//                startActivity(intent_img);
             }
         }
     }
+
+    public void UploadFile(final Bitmap bitmap){
+        String text2="";
+        Intent intent_text = new Intent(getApplicationContext(),RoiActivity.class);
+        intent_text.putExtra("text", "test test test\n");
+
+        try {
+//            text2+="------\n";
+            intent_text.putExtra("text", text2+"1\n");
+            URL url = new URL("http://203.250.32.251:8000/api?rows=960&cols=960");
+            intent_text.putExtra("text", text2+"2\n");
+            String lineEnd = "\r\n";
+            String twoHyphens = "--";
+            String boundary = "*****";
+
+            intent_text.putExtra("text", text2+"3\n");
+            // open connection
+            HttpURLConnection con = (HttpURLConnection)url.openConnection();
+            con.setDoInput(true); //input 허용
+            con.setDoOutput(true);  // output 허용
+            con.setUseCaches(false);   // cache copy를 허용하지 않는다.
+            con.setRequestMethod("POST");
+            con.setRequestProperty("Connection", "Keep-Alive");
+            con.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+
+            intent_text.putExtra("text", "text2+4\n");
+
+            // write data
+            DataOutputStream dos = new DataOutputStream(con.getOutputStream());
+            intent_text.putExtra("text", text2+"\n*************\n");
+            ByteArrayOutputStream blob = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, blob);
+            byte[] bytes = blob.toByteArray();
+
+            intent_text.putExtra("text", text2+"5\n");
+            dos.writeBytes(twoHyphens + boundary + lineEnd);
+
+            // 파일 전송시 파라메터명은 file1 파일명은 camera.jpg로 설정하여 전송
+            dos.writeBytes("Content-Disposition: form-data; name=\"file1\";filename=\"camera.jpg\"" + lineEnd);
+
+
+            dos.writeBytes(lineEnd);
+            dos.write(bytes);
+            dos.writeBytes(lineEnd);
+            dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+            dos.flush(); // finish upload...
+            dos.close();
+
+            intent_text.putExtra("text", text2+"end");
+            startActivity(intent_text);
+
+        } catch (Exception e) {
+            intent_text.putExtra("text", text2 + e);
+            startActivity(intent_text);
+        }
+
+    }
+
 }
