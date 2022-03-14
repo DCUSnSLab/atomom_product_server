@@ -1,3 +1,4 @@
+from test import getChunk, compData_chunk
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import render
 
@@ -8,6 +9,8 @@ import cv2
 
 from .models import Product
 import numpy as np
+print(os.getcwd())
+
 import django
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
@@ -29,12 +32,12 @@ craftModel, model, opt = ocr.setModel()
 os.chdir(curPath)
 
 
-from .tests import getChunk, compData_chunk
+
 cur1 = list(Product.objects.all().values_list('id', flat=True))
 cur2=list(Product.objects.all().values_list('name', flat=True))
+cur3 = list(Product.objects.all().values_list('brand', flat=True))
 
-
-cur = zip(cur1,cur2)
+cur = zip(cur1,cur2,cur3)
 
 # print(te[0])
 cur = sorted(list(cur),key=lambda x : len(x[1]))
@@ -46,94 +49,6 @@ def home(request):
     context['menutitle'] = 'HOME'
 
     return render(request, 'home.html', context)
-
-def groupby_(points,texts,img):
-    rows,cols,_ =img.shape
-    rThres = int(rows / 100)
-    cThres = int(cols / 20)
-    # newPoint
-
-    datas=[]
-    #포인트들에 텍스트 추가 (1,3,2,3,타이레놀)
-    for i, point in enumerate(points):
-        # print(i,point,texts[i])
-        r1, c1, r2, c2 = point
-        data=(r1,c1,r2,c2,texts[i])
-        datas.append(data)
-
-    # for i, data in enumerate(datas):
-    #     print(i,data,temp[i])
-
-    check=False
-    br=0
-    splitIndex=[]
-    for i, data in enumerate(datas):
-        r1, c1,r2,c2,t = data
-        if(check==False):
-            br=r1
-            check=True
-            continue
-        if(rThres<int(r1-br)):
-            splitIndex.append(i)
-        else:
-            pass
-        br=r1
-    newTexts=""
-
-    b=0
-    newDatas=[]
-    for i in range(len(splitIndex)):
-        rowi=i
-        i=splitIndex[i]
-        data=datas[b:i]
-
-        data = sorted(data, key=lambda x: (x[1]))
-        b=i
-        for i in data:
-            newDatas.append(i)
-        if(rowi==len(splitIndex)-1):
-            # print(len(datas),i)
-            data = datas[b:len(datas)]
-            # print(data)
-            # print(data)
-            data = sorted(data, key=lambda x: (x[1]))
-            for i in data:
-                newDatas.append(i)
-    # print("-"*50)
-    # print(newDatas)
-    newTexts=""
-    check=False
-    bdata=0
-    # print(img.shape)
-    centroid=0
-    bcentroid=0
-    rThres = int(rows / 30)
-    for i, data in enumerate(newDatas):
-        if(check==False):
-            check=True
-            bdata=data
-            br1, bc1, br2, bc2, t = bdata
-            newTexts+=t
-            continue
-        br1, bc1, br2, bc2, t = bdata
-        r1, c1, r2, c2, t = data
-        bcentroid=abs(br2-br1)+br1
-        centroid=abs(r2-r1)+r1
-        # print(bdata, data)
-        # print("     bcentroid,centroid, rThres, int(abs(bcentroid-centroid))",bcentroid,centroid,rThres,int(abs(bcentroid-centroid)))
-        if(rThres>int(abs(bcentroid-centroid))):
-
-            # print("     ",cThres,abs(int(c1-bc2)))
-            if(cThres>abs(int(c1-bc2))):
-                newTexts+=' '
-            else:
-                newTexts += '\n'
-        else:
-            newTexts+='\n'
-        newTexts+=t
-        bdata=data
-    # print(newTexts)
-    return newTexts
 
 def groupby(points,texts,img):
     rows,cols,_ =img.shape
@@ -148,55 +63,6 @@ def groupby(points,texts,img):
         r1, c1, r2, c2 = point
         data=(r1,c1,r2,c2,texts[i])
         datas.append(data)
-
-    # for i, data in enumerate(datas):
-    #     print(i,data,temp[i])
-    # xL = []
-    # yL = []
-    # X=[]
-    # center=[]
-    # x3=[]
-    # from .dbscan import customDBscan
-    # import matplotlib.pyplot as plt
-    # for i in datas:
-    #     x1=i[1]
-    #     x2=i[3]
-    #     y1=i[0]
-    #     y2=i[2]
-    #     cx=int((x1+x2)/2)
-    #     cy=int((y2 + y1)/2)
-    #     print(i)
-    #     xL.append(x1)
-    #     yL.append(y1)
-    #     xL.append(x2)
-    #     yL.append(y1)
-    #     X.append([x1,y1])
-    #     X.append([x2, y2])
-    #     center.append([cx,cy])
-    #     x3.append([x1,y1])
-    #     x3.append([x2, y2])
-    #     x3.append([cx,cy])
-    #     print(x1,x2,y1,y2,cx,cy)
-    #
-    #     img = cv2.circle(img, (i[1], i[0]), 20, (0, 0, 255), -1)
-    #     img = cv2.circle(img, (i[3], i[2]), 20, (0, 0, 255), -1)
-    # np.save('C:/Users/dgdgk/Documents/nps/x1x2', np.array(X))  # x_save.npy
-    # np.save('C:/Users/dgdgk/Documents/nps/center', np.array(center))  # x_save.npy
-    # np.save('C:/Users/dgdgk/Documents/nps/x3', np.array(x3))  # x_save.npy
-    # np.save('C:/Users/dgdgk/Documents/nps/bbox3', np.array(points))  # x_save.npy
-    # customDBscan(np.array(X),eps=rows/30,minPts=2,rows=rows,cols=cols)
-    #
-    # # plt.scatter(xL, yL, s=0.4)
-    # # # print(result_list[len(result_list)-1])
-    # # plt.ylabel('similarity_ratio')
-    # # plt.xlim([0, cols])
-    # # plt.ylim([0, rows])
-    # # ax = plt.gca()
-    # # ax.set_ylim(ax.get_ylim()[::-1])
-    # # cv2.namedWindow("img",cv2.WINDOW_NORMAL)
-    # # cv2.imshow("img", img)
-    # # cv2.waitKey(1)
-    # plt.show()
 
     check=False
     br=0
@@ -274,8 +140,8 @@ def groupby(points,texts,img):
 
 def groupby_api(points,texts,rows,cols):
     rThres = int(rows / 100)
-    # cThres = int(cols / 20)
-    cThres = int(cols / 50)
+    cThres = int(cols / 20)
+    # cThres = int(cols / 50)
     # newPoint
 
     datas=[]
@@ -337,7 +203,7 @@ def groupby_api(points,texts,rows,cols):
     # print(img.shape)
     centroid=0
     bcentroid=0
-    # rThres = int(rows / 30)
+    rThres = int(rows / 30)
     for i, data in enumerate(newDatas):
         if(check==False):
             check=True
@@ -365,21 +231,6 @@ def groupby_api(points,texts,rows,cols):
     # print(newTexts)
     return newTexts
 
-def coocr_compare(lis):
-    lis=lis.split('\n')
-    # print(lis)
-    # for i, text in enumerate(lis):
-    #     print(text)
-    #     print(Product.objects.raw("select * from atomom_product where name like %르 몬스터%;"))
-        # cur = Product.objects.filter(name__contains=text)
-        # for data in cur:
-        #     print(data)
-        #     print(data.name)
-
-        # for _, text in enumerate(texts):
-
-
-    pass
 
 def getMainProduct(curProduct):
     id = curProduct[1][0]
@@ -395,7 +246,7 @@ def getMainProduct(curProduct):
         name = q.name
         subName = q.subName
         barcode = q.barcode
-    print(name)
+    # print(name)
     iquery = Product.objects.raw(
         'select * from atomom_ingredients where id IN (select ingredients_id from atomom_pirelation where product_id=%s)',
         [id])
@@ -489,33 +340,127 @@ def makePdata(curProduct):
         "products":  products
     }
     return pdata
+
+
+
+def get_line_result(lis,cur,lenDict,score1,score2,includeBrandKor=False,includeBrandEng=False):
+    nProduct=0
+    productList=[]
+    # print(' '.join(lis))
+    bestScore=0
+    best=(None,None)
+    for i, data in enumerate(lis):
+        check=False
+        # data="에코 에너지 위장 크림 [SPF50+/PA+++]"
+        # print(i, data)
+        if(includeBrandKor==True):
+            result1 = compData_chunk(cur, lenDict, data, score=score1, includeBrandKor=True)
+        elif(includeBrandEng==True):
+            result1 = compData_chunk(cur, lenDict, data, score=score1, includeBrandEng=True)
+        else:
+            result1= compData_chunk(cur, lenDict, data, score=score1)
+        curProduct = result1[len(result1) - 1]
+        if(curProduct[2]>=bestScore):
+            bestScore=curProduct[2]
+            pdata = makePdata(curProduct=curProduct)
+            nProduct = 1
+            productList=[pdata]
+            best=(nProduct,productList)
+
+
+    return best[0], best[1], bestScore
+def get_product(lis,cur,lenDict,score1,score2):
+    '''
+    lis : line List ex) ['더페이스샾','스킨']
+    cur : db product name, cur은 product name을 문자열 길이 수순으로 정렬되었습니다
+    lenDict: {1:(0,23), 2:(23,230).... 문자열 길이 1은 cur[0:23]입니다
+    score1 : compChunk를 이용해 targetText를 db와 비교하는데 이 비교를 중단하는 임계 깞입니다
+    score2 : 줄단위 비교 또는 전체 비교를 수행하는데 이를 정답이라 인정 가능한 임계 값입니다
+    '''
+    print("line")
+    for i in lis:
+        print(i)
+    fullText = ' '.join(lis)
+    print("fullText\n",fullText)
+
+    result = compData_chunk(cur, lenDict, fullText, score=score1,includeBrandKor=True)
+    bestScore=result[len(result)-1][2]
+    pdata = makePdata(curProduct=result[len(result) - 1])
+    nProduct = 1
+    productList = [pdata]
+    print("fullTextKorean : ", result[len(result)-1])
+    best=(nProduct,productList)
+    if(bestScore>=score2):
+        return best
+
+    result = compData_chunk(cur, lenDict, fullText, score=score1, includeBrandEng=True)
+    curScore = result[len(result) - 1][2]
+    pdata = makePdata(curProduct=result[len(result) - 1])
+    nProduct = 1
+    productList = [pdata]
+    print("fullTextEng : ", result[len(result)-1])
+
+    if (curScore >= score2):
+        return (nProduct,productList)
+    elif(curScore>bestScore):
+        best=(nProduct,productList)
+        bestScore=curScore
+
+    nProduct,productList, curScore = get_line_result(lis,cur,lenDict,score1,score2)
+
+    print("onlyLine : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
+
+    if(curScore>=score2):
+        return nProduct,productList
+    elif(curScore>bestScore):
+        best=(nProduct,productList)
+        bestScore = curScore
+
+    nProduct, productList, curScore = get_line_result(lis, cur, lenDict, score1, score2, includeBrandKor=True)
+    print("line + brandKor : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
+    if (curScore >= score2):
+        return nProduct, productList
+    elif (curScore > bestScore):
+        best = (nProduct, productList)
+        bestScore = curScore
+
+    nProduct, productList, curScore = get_line_result(lis, cur, lenDict, score1, score2, includeBrandEng=True)
+    print("line + brandEng : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
+    if (curScore >= score2):
+        return nProduct, productList
+    elif (curScore > bestScore):
+        best = (nProduct, productList)
+        # bestScore = curScore
+
+
+    return best
+
+
+
+
 @csrf_exempt
 def api(request):
     context = {}
     context['menutitle'] = 'OCR READ'
-
     print("*"*50)
-
     print("\033[31mmethod", request.method)
+    print("keys")
+    print("     rows", request.GET.get('rows'))
+    print("     cols", request.GET.get('cols'))
+    print(request.GET)
+    rows = request.GET.get('rows')
+    cols = request.GET.get('cols')
     print("FILES'\033[0m'", request.FILES)
     print("cc",request.COOKIES)
-    # print("key",request.params)
     print(type(request))
-    # print("key",  request.GET.get("files"))
-
-    if 'media' in request.FILES:
+    if 'media' in request.FILES and rows!=None and cols!=None:
         uploadfile = request.FILES.get('media', '')
-
-        # data=request.data.get('data','')
-        #
-        # print(data)
-
         if uploadfile != '':
             print("여기 들어옴 ")
-            rows = int(request.COOKIES.get('rows', ''))
-            cols = int(request.COOKIES.get('cols', ''))
-            print(rows, cols)
-
+            # rows = int(request.COOKIES.get('rows', ''))
+            # cols = int(request.COOKIES.get('cols', ''))
+            rows=int(rows)
+            cols=int(cols)
             name_old = uploadfile.name
             fs = FileSystemStorage(location='static/source')
             imgname = fs.save(f"src-{name_old}", uploadfile)
@@ -523,29 +468,14 @@ def api(request):
             os.chdir(path)
             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
             texts = ocr.demo(opt,model)
-            # print("*"*50)
-            # print(texts)
             parsedText=groupby_api(points,texts,rows,cols)
-            # cv2.namedWindow("img",cv2.WINDOW_NORMAL)
-            # cv2.imshow("img",img)
-            # cv2.waitKey(0)
-            print("parsedText",parsedText)
+            # print("parsedText",parsedText)
             ocr.mkdir()
             os.chdir(curPath)
-            lis=parsedText.split('\n')
-            nProduct=0
-            productList=[]
-            for i,data in enumerate(lis):
-                # data="에코 에너지 위장 크림 [SPF50+/PA+++]"
-                print(i,data)
-                result1 = compData_chunk(cur, lenDict, data, score=95)
-                curProduct=result1[len(result1)-1]
-                if(curProduct[2]>=70):
-                    # productList.append(curProduct)
-                    print("     ",curProduct)
-                    pdata=makePdata(curProduct=curProduct)
-                    nProduct+=1
-                    productList.append(pdata)
+            lineList=parsedText.split('\n')
+            # nProduct,productList = get_line_result_by_pname(lineList,cur,lenDict,score=70)
+            nProduct, productList = get_product(lineList, cur, lenDict, score1=70,score2=95)
+
 
             data= dict(nProduct=nProduct)
 
