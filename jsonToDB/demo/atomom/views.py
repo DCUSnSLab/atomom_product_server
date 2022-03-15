@@ -1,7 +1,7 @@
 from test import getChunk, compData_chunk
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import render
-
+from django.db.models import Q
 import os, sys
 
 from PIL import Image
@@ -30,7 +30,7 @@ import demo_modifed_for_one_image_processing as ocr
 os.chdir(path)
 craftModel, model, opt = ocr.setModel()
 os.chdir(curPath)
-
+server_dir=os.getcwd()
 
 
 cur1 = list(Product.objects.all().values_list('id', flat=True))
@@ -438,20 +438,75 @@ def get_product(lis,cur,lenDict,score1,score2):
 
 
 
+# @csrf_exempt
+# def api(request):
+#     context = {}
+#     context['menutitle'] = 'OCR READ'
+#     print("*"*50)
+#     print("\033[31mmethod", request.method)
+#     print("keys")
+#     print("     rows", request.GET.get('rows'))
+#     print("     cols", request.GET.get('cols'))
+#     print(request.GET)
+#     rows = request.GET.get('rows')
+#     cols = request.GET.get('cols')
+#     print("FILES'\033[0m'", request.FILES)
+#     print("cc",request.COOKIES)
+#     print(type(request))
+#     if 'media' in request.FILES and rows!=None and cols!=None:
+#         uploadfile = request.FILES.get('media', '')
+#         if uploadfile != '':
+#             print("여기 들어옴 ")
+#             # rows = int(request.COOKIES.get('rows', ''))
+#             # cols = int(request.COOKIES.get('cols', ''))
+#             rows=int(rows)
+#             cols=int(cols)
+#             name_old = uploadfile.name
+#             fs = FileSystemStorage(location='static/source')
+#             imgname = fs.save(f"src-{name_old}", uploadfile)
+#             imgPath=curPath+f"./static/source/{imgname}"
+#             os.chdir(path)
+#             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
+#             texts = ocr.demo(opt,model)
+#             parsedText=groupby_api(points,texts,rows,cols)
+#             # print("parsedText",parsedText)
+#             ocr.mkdir()
+#             os.chdir(curPath)
+#             lineList=parsedText.split('\n')
+#             # nProduct,productList = get_line_result_by_pname(lineList,cur,lenDict,score=70)
+#             nProduct, productList = get_product(lineList, cur, lenDict, score1=70,score2=95)
+#
+#
+#             data= dict(nProduct=nProduct)
+#
+#             for i in range(nProduct):
+#                 data[str(i)]=productList[i]
+#
+#
+#             return JsonResponse(data)
+#     data = {
+#         "name": "파일을 읽을 수 없습니다 ",
+#     }
+#
+#     return JsonResponse(data)
+
+    # return render(request, 'coocr_upload.html', context)
+
 @csrf_exempt
 def api(request):
+    os.chdir(server_dir)
     context = {}
     context['menutitle'] = 'OCR READ'
-    print("*"*50)
-    print("\033[31mmethod", request.method)
-    print("keys")
-    print("     rows", request.GET.get('rows'))
-    print("     cols", request.GET.get('cols'))
-    print(request.GET)
+    # print("*"*50)
+    # print("\033[31mmethod", request.method)
+    # print("keys")
+    # print("     rows", request.GET.get('rows'))
+    # print("     cols", request.GET.get('cols'))
+    # print(request.GET)
     rows = request.GET.get('rows')
     cols = request.GET.get('cols')
-    print("FILES'\033[0m'", request.FILES)
-    print("cc",request.COOKIES)
+    # print("FILES'\033[0m'", request.FILES)
+    # print("cc",request.COOKIES)
     print(type(request))
     if 'media' in request.FILES and rows!=None and cols!=None:
         uploadfile = request.FILES.get('media', '')
@@ -464,33 +519,32 @@ def api(request):
             name_old = uploadfile.name
             fs = FileSystemStorage(location='static/source')
             imgname = fs.save(f"src-{name_old}", uploadfile)
+
             imgPath=curPath+f"./static/source/{imgname}"
             os.chdir(path)
             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
+
             texts = ocr.demo(opt,model)
-            parsedText=groupby_api(points,texts,rows,cols)
-            # print("parsedText",parsedText)
-            ocr.mkdir()
-            os.chdir(curPath)
-            lineList=parsedText.split('\n')
-            # nProduct,productList = get_line_result_by_pname(lineList,cur,lenDict,score=70)
-            nProduct, productList = get_product(lineList, cur, lenDict, score1=70,score2=95)
+            # img = ocr.putText(img, points, texts)
+            # print("*"*50)
+            # print("texts")
+            # cv2.imshow("img",img)
+            # cv2.waitKey(0)
+            print(texts)
+            q = Q()
+            for i in texts:
+                q.add(Q(name__icontains=i), q.OR)
+                q.add(Q(brand__icontains=i), q.OR)
 
+            product = Product.objects.filter(q)
+            for i in product:
+                print(i.id,i.name)
 
-            data= dict(nProduct=nProduct)
-
-            for i in range(nProduct):
-                data[str(i)]=productList[i]
-
-
-            return JsonResponse(data)
     data = {
         "name": "파일을 읽을 수 없습니다 ",
     }
 
     return JsonResponse(data)
-
-    # return render(request, 'coocr_upload.html', context)
 @csrf_exempt
 def coocr_upload(request):
     context = {}
@@ -530,6 +584,7 @@ def coocr_upload(request):
 
             os.chdir(path)
             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
+
             texts = ocr.demo(opt,model)
             # print(points)
             # print(texts)

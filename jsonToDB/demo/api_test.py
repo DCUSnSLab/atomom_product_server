@@ -41,20 +41,23 @@ def getMulti(opt):
 
     for i in tqdm(range(len(roi_list))):
         fileName=roi_list[i]
+
         img=cv2.imread(os.path.join(origin_path,fileName))
         rows,cols,_=img.shape
         data={'rows': str(rows), 'cols': str(cols)}
+        print(data)
         files = {'media': open(os.path.join(roi_path,fileName), 'rb')}
         # print(type(files))
 
         # response=requests.post("http://203.250.32.251:8000/coocr_upload",files=files)
-        response=requests.post("http://203.250.32.251:8000/api",files=files,cookies=data)
-        j=response.json()
-        path='C:/Users/dgdgk/Documents'
-        file_name=fileName.split(".")
-        # print(fileName,file_name)
-        file_name=file_name[0]+".json"
-        with open(os.path.join(path,file_name), 'w',encoding='UTF-8') as outfile:
+        response = requests.post("http://203.250.32.251:8000/api", files=files, params=data)
+        j = response.json()
+        path = 'C:/Users/dgdgk/Documents'
+        file_name = fileName.split(".")
+        print(fileName, file_name)
+        file_name = file_name[0] + ".json"
+        with open(os.path.join(path, file_name), 'w', encoding='UTF-8') as outfile:
+            # json.dump(j, outfile,ensure_ascii=False,indent='\t')
             json.dump(j, outfile, ensure_ascii=False, indent='\t')
         # print(response.json())
         # print(response.content)

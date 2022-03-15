@@ -1,66 +1,79 @@
+
+# -*- coding: utf-8 -*-
+import os, sys
+from tqdm import tqdm
+from PIL import Image
+import cv2
+
+
 import numpy as np
+import django
+
 import matplotlib.pyplot as plt
 import matplotlib
+
+import matplotlib.pyplot as plt
+import matplotlib
+
 import cv2
 from sklearn.cluster import DBSCAN
+from sklearn.neighbors import NearestNeighbors
+
+from kneed import KneeLocator
+
+curPath=os.getcwd()
+path=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath("__file__"))))))
+print(path)
+# print(os.listdir(path))
+path=os.path.join(path,'atoOCR')
+print(path)
+sys.path.append(path)
+import demo_modifed_for_one_image_processing as ocr
+
+os.chdir(path)
+craftModel, model, opt = ocr.setModel()
+os.chdir(curPath)
+import winsound as ws
 
 
-# Define a function to generate clusters
-def cluster_gen(n_clusters, pts_minmax=(10, 100), x_mult=(1, 4), y_mult=(1, 3),
-                x_off=(0, 50), y_off=(0, 50)):
-    # n_clusters = number of clusters to generate
-    # pts_minmax = range of number of points per cluster
-    # x_mult = range of multiplier to modify the size of cluster in the x-direction
-    # y_mult = range of multiplier to modify the size of cluster in the x-direction
-    # x_off = range of cluster position offset in the x-direction
-    # y_off = range of cluster position offset in the y-direction
+def beepsound(freq=5000, ms=5000):
+    ws.Beep(freq, ms)  # winsound.Beep(frequency, duration)
 
-    # Initialize some empty lists to receive cluster member positions
-    clusters_x = []
-    clusters_y = []
-    # Genereate random values given parameter ranges
-    n_points = np.random.randint(pts_minmax[0], pts_minmax[1], n_clusters)
-    x_multipliers = np.random.randint(x_mult[0], x_mult[1], n_clusters)
-    y_multipliers = np.random.randint(y_mult[0], y_mult[1], n_clusters)
-    x_offsets = np.random.randint(x_off[0], x_off[1], n_clusters)
-    y_offsets = np.random.randint(y_off[0], y_off[1], n_clusters)
 
-    # Generate random clusters given parameter values
-    for idx, npts in enumerate(n_points):
-        xpts = np.random.randn(npts) * x_multipliers[idx] + x_offsets[idx]
-        ypts = np.random.randn(npts) * y_multipliers[idx] + y_offsets[idx]
-        clusters_x.append(xpts)
-        clusters_y.append(ypts)
-
-    # Return cluster positions
-    return clusters_x, clusters_y
-
-def customDBscan_vis_True():
-    pass
-def customDBscan_vis_False():
-    pass
-
-def customDBscan(data,rows,cols,eps,minPts):
+def getOcrResult(imgPath):
+    img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
+    texts = ocr.demo(opt, model)
+    return img, points, texts
+def customDBscan_vis_True(img,data,rows,cols,eps,minPts,name):
     db = DBSCAN(eps=eps, min_samples=minPts).fit(data)
     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
     core_samples_mask[db.core_sample_indices_] = True
     labels = db.labels_
     n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
     unique_labels = set(labels)
+    colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
 
-    fig = plt.figure(figsize=(12, 6))
-    plt.subplot(131)
+
+
+    # fig = plt.figure(figsize=(18, 8))
+    fig = plt.figure(figsize=(18, 3))
+
+    ax2 = plt.subplot(131)
+    plt.title('src', fontsize=20)
+#     ax2.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), interpolation='nearest', aspect='auto')
+#     ax2.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), interpolation='nearest', aspect='auto')
+    ax2.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+    plt.subplot(132)
     plt.plot(data[:, 0], data[:, 1], 'ko')
     plt.xlim(0, cols)
     plt.ylim(0, rows)
     ax = plt.gca()
     ax.set_ylim(ax.get_ylim()[::-1])
-    plt.title('Original Data', fontsize=20)
+    plt.title('bboxes', fontsize=20)
 
-    plt.subplot(132)
-    # The following is just a fancy way of plotting core, edge and outliers
-    # Credit to: http://scikit-learn.org/stable/auto_examples/cluster/plot_dbscan.html#sphx-glr-auto-examples-cluster-plot-dbscan-py
-    colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
+    plt.subplot(133)
+
 
     for k, col in zip(unique_labels, colors):
         if k == -1:
@@ -71,8 +84,7 @@ def customDBscan(data,rows,cols,eps,minPts):
 
         xy = data[class_member_mask & core_samples_mask]
         plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
-                 markeredgecolor='none',markersize=7)
-
+                 markeredgecolor='none', markersize=7)
 
         # xy = data[class_member_mask & ~core_samples_mask]
         # plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
@@ -85,9 +97,26 @@ def customDBscan(data,rows,cols,eps,minPts):
     ax = plt.gca()
     ax.set_ylim(ax.get_ylim()[::-1])
 
-    plt.show()
 
-def run(img,bboxs,eps,minPts,vis=False):
+
+    path='./plt/'
+
+    if not os.path.isdir(path):
+        os.mkdir(path)
+    plt.savefig(path+name,dpi=300)
+    plt.close(fig)
+def customDBscan_vis_False(img,data,rows,cols,eps,minPts):
+    pass
+
+def customDBscan(img,data,rows,cols,eps,minPts,vis,name):
+    if(vis==True):
+        customDBscan_vis_True(img=img,data=np.array(data), rows=rows, cols=cols, eps=eps, minPts=minPts,name=name)
+    else:
+        customDBscan_vis_False(img=img,data=np.array(data), rows=rows, cols=cols, eps=eps, minPts=minPts)
+
+
+def run(img,bboxs,eps,minPts,vis=False,name='default'):
+    rows,cols,_=img.shape
     zeros = np.zeros((rows, cols), dtype=np.uint8)
     for i in bboxs:
         y1,x1,y2,x2=i
@@ -97,26 +126,48 @@ def run(img,bboxs,eps,minPts,vis=False):
     for i, data in enumerate(x):
         zeros[x[i],y[i]]=255
         cum.append([y[i],x[i]])
-    if(vis==True):
-        # cv2.namedWindow("img", cv2.WINDOW_NORMAL)
-        # cv2.namedWindow("img2", cv2.WINDOW_NORMAL)
-        # cv2.namedWindow("img3", cv2.WINDOW_NORMAL)
-        # cv2.resizeWindow("img", width=640, height=480)
-        # cv2.resizeWindow("img2", width=640, height=480)
-        # cv2.resizeWindow("img3", width=640, height=480)
-        # cv2.imshow("img", img)
-        customDBscan(np.array(cum), rows=rows, cols=cols, eps=eps, minPts=minPts)
-        # cv2.waitKey(0)
-        pass
+    customDBscan(img=img,data=np.array(cum), rows=rows, cols=cols, eps=eps, minPts=minPts,vis=vis,name=name)
+
+
 if __name__ == '__main__':
-    img = cv2.imread("../../../demo_image/39.jpg")
-    bboxs = np.load('C:/Users/dgdgk/Documents/nps/bbox3.npy')
-    rows,cols,_=img.shape
-
-    eps=25
-    minPts=2
-
-    run(img=img,bboxs=bboxs,eps=eps,minPts=minPts,vis=True)
+    path = './plt/'
+    print(os.path.join(path,'ddd'))
+    imgName="test11.jpg"
+    imgPath='C:/Users/dgdgk/Desktop/atomom_product_server/demo_image/'+imgName
+    img, points, texts = getOcrResult(imgPath)
+    # print(texts)
+    # cv2.imshow("img",img)
+    # cv2.waitKey(0)
+    run(img=img, bboxs=points, eps=45, minPts=2, vis=True, name=imgName)
+#     #     base_path='C:/Users/dgdgk/Desktop/atomom_product_server/demo_image'
+#     base_path = 'C:/Users/dgdgk/Desktop/atomom_product_server/cosmetic_demo_image'
+#     dirlist = []
+#     for filename in os.listdir(base_path):
+#         if os.path.isfile(os.path.join(base_path, filename)) == True:
+#             dirlist.append(os.path.join(base_path, filename))
+#             print(filename)
+#
+# #     print(beepsound())
+#         cnt = 0
+#         for i in tqdm(range(len(dirlist))):
+#             imgPath = dirlist[i]
+#             img, points, texts = getOcrResult(imgPath)
+#             rows, cols, _ = img.shape
+#             eps = 25
+#             minPts = 2
+#
+#             filename = os.path.basename(imgPath)
+#             filename, extension = os.path.splitext(filename)
+#             filename = "filename_" + filename + "_eps=" + str(eps) + "_minPts" + str(minPts) + extension
+#             #         print(filename)
+#             cv2.imwrite('./plt/' + filename, img)
+#         #         cv2.namedWindow("img",cv2.WINDOW_NORMAL)
+#         #         cv2.imshow("img",img)
+#         #         cv2.waitKey(0)
+#         #         run(img=img,bboxs=points,eps=eps,minPts=minPts,vis=True,name=filename)
+#         import ctypes  # An included library with Python install.
+#
+#         ctypes.windll.user32.MessageBoxW(0, "Your text", "Your title", 1)
 
 
 
