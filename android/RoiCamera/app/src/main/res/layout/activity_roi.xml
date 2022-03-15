@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".RoiActivity"
+    >
+
+<!--    <ImageView-->
+<!--        android:id="@+id/roi_photo"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="238dp" />-->
+
+
+    <TextView
+        android:id="@+id/img_details"
+        android:layout_width="match_parent"
+        android:layout_height="341dp" />
+
+    <TextView
+        android:text="한글 테스트 중"
+        android:layout_width="match_parent"
+        android:layout_height="289dp" />
+
+</LinearLayout>

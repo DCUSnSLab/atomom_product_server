@@ -13,6 +13,8 @@
 *.zip
 *.eps
 *.pdf
+**/sdk/*
+**/src/*
 
 ### Linux ###
 *~
