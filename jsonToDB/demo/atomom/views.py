@@ -1,4 +1,4 @@
-from test import getChunk, compData_chunk
+from similarity_matching import getChunk, compData_chunk, compData_full
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import render
 from django.db.models import Q
@@ -33,17 +33,17 @@ os.chdir(curPath)
 server_dir=os.getcwd()
 
 
-cur1 = list(Product.objects.all().values_list('id', flat=True))
-cur2=list(Product.objects.all().values_list('name', flat=True))
-cur3 = list(Product.objects.all().values_list('brand', flat=True))
-
-cur = zip(cur1,cur2,cur3)
-
-# print(te[0])
-cur = sorted(list(cur),key=lambda x : len(x[1]))
-cur2 = sorted(list(Product.objects.all().values_list('name', flat=True)), key=len)
-
-lenDict=getChunk(cur2)
+# cur1 = list(Product.objects.all().values_list('id', flat=True))
+# cur2=list(Product.objects.all().values_list('name', flat=True))
+# cur3 = list(Product.objects.all().values_list('brand', flat=True))
+#
+# cur = zip(cur1,cur2,cur3)
+#
+# # print(te[0])
+# cur = sorted(list(cur),key=lambda x : len(x[1]))
+# cur2 = sorted(list(Product.objects.all().values_list('name', flat=True)), key=len)
+#
+# lenDict=getChunk(cur2)
 def home(request):
     context = {}
     context['menutitle'] = 'HOME'
@@ -343,7 +343,34 @@ def makePdata(curProduct):
 
 
 
-def get_line_result(lis,cur,lenDict,score1,score2,includeBrandKor=False,includeBrandEng=False):
+# def get_line_result_chunk(lis,cur,lenDict,score1,score2,includeBrandKor=False,includeBrandEng=False):
+#     nProduct=0
+#     productList=[]
+#     # print(' '.join(lis))
+#     bestScore=0
+#     best=(None,None)
+#     for i, data in enumerate(lis):
+#         check=False
+#         # data="에코 에너지 위장 크림 [SPF50+/PA+++]"
+#         # print(i, data)
+#         if(includeBrandKor==True):
+#             result1 = compData_chunk(cur, lenDict, data, score=score1, includeBrandKor=True)
+#         elif(includeBrandEng==True):
+#             result1 = compData_chunk(cur, lenDict, data, score=score1, includeBrandEng=True)
+#         else:
+#             result1= compData_chunk(cur, lenDict, data, score=score1)
+#         curProduct = result1[len(result1) - 1]
+#         if(curProduct[2]>=bestScore):
+#             bestScore=curProduct[2]
+#             pdata = makePdata(curProduct=curProduct)
+#             nProduct = 1
+#             productList=[pdata]
+#             best=(nProduct,productList)
+#
+#
+#     return best[0], best[1], bestScore
+
+def get_line_result(lis,cur,score1,includeBrandLeft=False,includeBrandRight=False):
     nProduct=0
     productList=[]
     # print(' '.join(lis))
@@ -353,12 +380,8 @@ def get_line_result(lis,cur,lenDict,score1,score2,includeBrandKor=False,includeB
         check=False
         # data="에코 에너지 위장 크림 [SPF50+/PA+++]"
         # print(i, data)
-        if(includeBrandKor==True):
-            result1 = compData_chunk(cur, lenDict, data, score=score1, includeBrandKor=True)
-        elif(includeBrandEng==True):
-            result1 = compData_chunk(cur, lenDict, data, score=score1, includeBrandEng=True)
-        else:
-            result1= compData_chunk(cur, lenDict, data, score=score1)
+
+        result1 = compData_full(cur, data, score=score1,includeBrandLeft=includeBrandLeft,includeBrandRight=includeBrandRight)
         curProduct = result1[len(result1) - 1]
         if(curProduct[2]>=bestScore):
             bestScore=curProduct[2]
@@ -369,7 +392,73 @@ def get_line_result(lis,cur,lenDict,score1,score2,includeBrandKor=False,includeB
 
 
     return best[0], best[1], bestScore
-def get_product(lis,cur,lenDict,score1,score2):
+
+# def get_product_chunk(lis,cur,lenDict,score1,score2):
+#     '''
+#     lis : line List ex) ['더페이스샾','스킨']
+#     cur : db product name, cur은 product name을 문자열 길이 수순으로 정렬되었습니다
+#     lenDict: {1:(0,23), 2:(23,230).... 문자열 길이 1은 cur[0:23]입니다
+#     score1 : compChunk를 이용해 targetText를 db와 비교하는데 이 비교를 중단하는 임계 깞입니다
+#     score2 : 줄단위 비교 또는 전체 비교를 수행하는데 이를 정답이라 인정 가능한 임계 값입니다
+#     '''
+#     print("line")
+#     for i in lis:
+#         print(i)
+#     fullText = ' '.join(lis)
+#     print("fullText\n",fullText)
+#
+#     result = compData_chunk(cur, lenDict, fullText, score=score1,includeBrandKor=True)
+#     bestScore=result[len(result)-1][2]
+#     pdata = makePdata(curProduct=result[len(result) - 1])
+#     nProduct = 1
+#     productList = [pdata]
+#     print("fullTextKorean : ", result[len(result)-1])
+#     best=(nProduct,productList)
+#     if(bestScore>=score2):
+#         return best
+#
+#     result = compData_chunk(cur, lenDict, fullText, score=score1, includeBrandEng=True)
+#     curScore = result[len(result) - 1][2]
+#     pdata = makePdata(curProduct=result[len(result) - 1])
+#     nProduct = 1
+#     productList = [pdata]
+#     print("fullTextEng : ", result[len(result)-1])
+#
+#     if (curScore >= score2):
+#         return (nProduct,productList)
+#     elif(curScore>bestScore):
+#         best=(nProduct,productList)
+#         bestScore=curScore
+#
+#     nProduct,productList, curScore = get_line_result(lis,cur,lenDict,score1,score2)
+#
+#     print("onlyLine : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
+#
+#     if(curScore>=score2):
+#         return nProduct,productList
+#     elif(curScore>bestScore):
+#         best=(nProduct,productList)
+#         bestScore = curScore
+#
+#     nProduct, productList, curScore = get_line_result(lis, cur, lenDict, score1, score2, includeBrandKor=True)
+#     print("line + brandKor : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
+#     if (curScore >= score2):
+#         return nProduct, productList
+#     elif (curScore > bestScore):
+#         best = (nProduct, productList)
+#         bestScore = curScore
+#
+#     nProduct, productList, curScore = get_line_result(lis, cur, lenDict, score1, score2, includeBrandEng=True)
+#     print("line + brandEng : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
+#     if (curScore >= score2):
+#         return nProduct, productList
+#     elif (curScore > bestScore):
+#         best = (nProduct, productList)
+#         # bestScore = curScore
+#
+#
+#     return best
+def get_product(lis,cur,score1,score2):
     '''
     lis : line List ex) ['더페이스샾','스킨']
     cur : db product name, cur은 product name을 문자열 길이 수순으로 정렬되었습니다
@@ -383,22 +472,22 @@ def get_product(lis,cur,lenDict,score1,score2):
     fullText = ' '.join(lis)
     print("fullText\n",fullText)
 
-    result = compData_chunk(cur, lenDict, fullText, score=score1,includeBrandKor=True)
+    result = compData_full(cur, fullText, score=score1,includeBrandLeft=True)
     bestScore=result[len(result)-1][2]
     pdata = makePdata(curProduct=result[len(result) - 1])
     nProduct = 1
     productList = [pdata]
-    print("fullTextKorean : ", result[len(result)-1])
+    print("fullTextBrandLeft : ", result[len(result)-1])
     best=(nProduct,productList)
     if(bestScore>=score2):
         return best
 
-    result = compData_chunk(cur, lenDict, fullText, score=score1, includeBrandEng=True)
+    result = compData_full(cur, fullText, score=score1, includeBrandRight=True)
     curScore = result[len(result) - 1][2]
     pdata = makePdata(curProduct=result[len(result) - 1])
     nProduct = 1
     productList = [pdata]
-    print("fullTextEng : ", result[len(result)-1])
+    print("fullTextBrandRight : ", result[len(result)-1])
 
     if (curScore >= score2):
         return (nProduct,productList)
@@ -406,7 +495,7 @@ def get_product(lis,cur,lenDict,score1,score2):
         best=(nProduct,productList)
         bestScore=curScore
 
-    nProduct,productList, curScore = get_line_result(lis,cur,lenDict,score1,score2)
+    nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1)
 
     print("onlyLine : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
 
@@ -416,7 +505,7 @@ def get_product(lis,cur,lenDict,score1,score2):
         best=(nProduct,productList)
         bestScore = curScore
 
-    nProduct, productList, curScore = get_line_result(lis, cur, lenDict, score1, score2, includeBrandKor=True)
+    nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandLeft=True)
     print("line + brandKor : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
     if (curScore >= score2):
         return nProduct, productList
@@ -424,7 +513,7 @@ def get_product(lis,cur,lenDict,score1,score2):
         best = (nProduct, productList)
         bestScore = curScore
 
-    nProduct, productList, curScore = get_line_result(lis, cur, lenDict, score1, score2, includeBrandEng=True)
+    nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandRight=True)
     print("line + brandEng : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
     if (curScore >= score2):
         return nProduct, productList
@@ -434,7 +523,6 @@ def get_product(lis,cur,lenDict,score1,score2):
 
 
     return best
-
 
 
 
@@ -498,15 +586,15 @@ def api(request):
     context = {}
     context['menutitle'] = 'OCR READ'
     # print("*"*50)
-    # print("\033[31mmethod", request.method)
-    # print("keys")
-    # print("     rows", request.GET.get('rows'))
-    # print("     cols", request.GET.get('cols'))
-    # print(request.GET)
+    print("\033[31mmethod", request.method)
+    print("keys")
+    print("     rows", request.GET.get('rows'))
+    print("     cols", request.GET.get('cols'))
+    print(request.GET)
     rows = request.GET.get('rows')
     cols = request.GET.get('cols')
-    # print("FILES'\033[0m'", request.FILES)
-    # print("cc",request.COOKIES)
+    print("FILES'\033[0m'", request.FILES)
+    print("cc",request.COOKIES)
     print(type(request))
     if 'media' in request.FILES and rows!=None and cols!=None:
         uploadfile = request.FILES.get('media', '')
@@ -525,6 +613,11 @@ def api(request):
             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
 
             texts = ocr.demo(opt,model)
+            parsedText=groupby_api(points,texts,rows,cols)
+            # print("parsedText",parsedText)
+            ocr.mkdir()
+            os.chdir(curPath)
+            lineList=parsedText.split('\n')
             # img = ocr.putText(img, points, texts)
             # print("*"*50)
             # print("texts")
@@ -534,11 +627,12 @@ def api(request):
             q = Q()
             for i in texts:
                 q.add(Q(name__icontains=i), q.OR)
-                q.add(Q(brand__icontains=i), q.OR)
 
             product = Product.objects.filter(q)
-            for i in product:
-                print(i.id,i.name)
+            product = list(product.values())
+            cur = list((p['id'], p['name'], p['brand']) for p in product)
+            nProduct, productList = get_product(lineList, cur, score1=70, score2=95)
+
 
     data = {
         "name": "파일을 읽을 수 없습니다 ",

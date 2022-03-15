@@ -172,20 +172,34 @@ def compData_chunk(cur,lenDict,target,score,includeBrandKor=False,includeBrandEn
             break
     # print(cnt)
     return resultList
-def compData_full(cur,target,score=90):
+def compData_full(cur,target,score=90,includeBrandLeft=False,includeBrandRight=False):
     if (len(target) == 0):
         return [(None, (None,None), 0)]
     difflib.SequenceMatcher = CSequenceMatcher
-
-
 
     seq = difflib.SequenceMatcher()
     seq.set_seq1(target)
     maxValue=0
     result_list=[]
-
+    brandLeft=""
+    brandRight=""
     for i, data in enumerate(cur):
-        seq.set_seq2(data[1])
+        compTarget=data[1]
+        if(includeBrandLeft == True or includeBrandRight == False):
+            if ('(' in data[2]):
+                brand = data[2].split('(')
+                brandLeft = brand[0].strip()+' '
+                brandRight = brand[1].split(')')[0].strip()+' '
+            else:
+                brandLeft = data[2].strip()+' '
+                brandRight = data[2].strip()+' '
+
+            if (includeBrandLeft == True):
+                compTarget=brandLeft + data[1]
+            elif (includeBrandRight == True):
+                compTarget=brandRight + data[1]
+
+        seq.set_seq2(compTarget)
         cur_ratio = (lambda x: seq.quick_ratio() * 100)(0)
         if(maxValue<=cur_ratio):
             result_list.append((i,data,cur_ratio))
@@ -327,12 +341,14 @@ if __name__ == '__main__':
     ocrR=['멀티', '유즈','아이팔레트','스타티스']
     q = Q()
     for i in ocrR:
-        q.add(Q(name__icontains=i),q.AND)
+        q.add(Q(name__icontains=i),q.OR)
 
     product=Product.objects.filter(q)
-    print(product.count())
-    for i in product:
-        print(i)
+    product=list(product.values())
+    product=list((p['id'],p['name'],p['brand']) for p in product)
+    print(product)
+    # for i in product:
+    #     print(i)
     cur1 = list(Product.objects.all().values_list('id', flat=True))
     cur2=list(Product.objects.all().values_list('name', flat=True))
     cur3 = list(Product.objects.all().values_list('brand', flat=True))
