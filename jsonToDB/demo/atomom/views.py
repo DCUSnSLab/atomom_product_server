@@ -9,8 +9,8 @@ import cv2
 
 from .models import Product
 import numpy as np
-print(os.getcwd())
 
+from copy import deepcopy
 import django
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
@@ -20,10 +20,10 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 curPath=os.getcwd()
 path=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
-print(path)
+# print(path)
 # print(os.listdir(path))
 path=os.path.join(path,'atoOCR')
-print(path)
+
 sys.path.append(path)
 import demo_modifed_for_one_image_processing as ocr
 
@@ -33,17 +33,18 @@ os.chdir(curPath)
 server_dir=os.getcwd()
 
 
-# cur1 = list(Product.objects.all().values_list('id', flat=True))
-# cur2=list(Product.objects.all().values_list('name', flat=True))
-# cur3 = list(Product.objects.all().values_list('brand', flat=True))
+cur1 = list(Product.objects.all().values_list('id', flat=True))
+cur2=list(Product.objects.all().values_list('name', flat=True))
+cur3 = list(Product.objects.all().values_list('brand', flat=True))
+
+cur = zip(cur1,cur2,cur3)
+origin_cur=zip(cur1,cur2,cur3)
 #
-# cur = zip(cur1,cur2,cur3)
-#
-# # print(te[0])
-# cur = sorted(list(cur),key=lambda x : len(x[1]))
-# cur2 = sorted(list(Product.objects.all().values_list('name', flat=True)), key=len)
-#
-# lenDict=getChunk(cur2)
+# print(te[0])
+cur = sorted(list(cur),key=lambda x : len(x[1]))
+cur2 = sorted(list(Product.objects.all().values_list('name', flat=True)), key=len)
+
+lenDict=getChunk(cur2)
 def home(request):
     context = {}
     context['menutitle'] = 'HOME'
@@ -138,7 +139,7 @@ def groupby(points,texts,img):
     return newTexts
 
 
-def groupby_api(points,texts,rows,cols):
+def groupby_api_legacy(points,texts,rows,cols):
     rThres = int(rows / 100)
     cThres = int(cols / 20)
     # cThres = int(cols / 50)
@@ -229,6 +230,79 @@ def groupby_api(points,texts,rows,cols):
         newTexts+=t
         bdata=data
     # print(newTexts)
+    return newTexts
+
+def endLineCHeck(i,datas,newText,newTexts):
+    if (i >= len(datas) - 1):
+        newText = sorted(newText, key=lambda x: (abs(x[1])))
+        newText = [i[4] for i in newText]
+        # os.system('pause')
+        newTexts += ' '.join(newText) + '\n'
+        return newTexts
+    else:
+        return newTexts
+
+def separate_list(datas):
+    check = False
+    newTexts = ""
+    newText = []
+    i = 0
+    # print("ocr result")
+    # print(datas)
+    # print("*" * 50)
+    for i, data in enumerate(datas):
+        # print(data,i,len(datas)-1)
+        if (check == False):
+            # 라인 시작 부분 체크
+            check = True
+            bdata = data
+            newText.append(data)
+            continue
+        br1, bc1, br2, bc2, t1 = bdata
+        r1, c1, r2, c2, t2 = data
+        range1 = range(br1, br2 + 1)
+        range2 = range(r1, r2 + 1)
+        x = set(range1)
+        x = x.intersection(range2)
+        if (len(x) == 0):
+            # print(newText)
+            newText = sorted(newText, key=lambda x: (abs(x[1])))
+            newText=[i[4] for i in newText]
+            # os.system('pause')
+            newTexts += ' '.join(newText)+'\n'
+            newText = []
+            newText.append(data)
+            bdata = data
+            # print("교집합 원소수:",len(x), "기준 원소 수",len(range1) / 2,"     분리1")
+            newTexts=endLineCHeck(i=i,datas=datas,newText=newText,newTexts=newTexts)
+        elif ((len(range1) / 2.5 >= len(x))):
+            newText = sorted(newText, key=lambda x: (abs(x[1])))
+            # print(newText)
+            newText = [i[4] for i in newText]
+            newTexts += ' '.join(newText) + '\n'
+            newText = []
+            newText.append(data)
+            bdata = data
+            # print("교집합 원소수:",len(x), "기준 원소 수",len(range1) / 2,"     분리2")
+            newTexts=endLineCHeck(i=i,datas=datas,newText=newText,newTexts=newTexts)
+        else:
+            newText.append(data)
+            newTexts=endLineCHeck(i=i,datas=datas,newText=newText,newTexts=newTexts)
+    # print("*"*50)
+    # print(newTexts)
+    return newTexts
+
+
+
+
+def groupby_api(points,texts):
+
+
+    #포인트들에 텍스트 추가 (1,3,2,3,타이레놀)
+    datas=[(*points[i],texts[i]) for i in range(len(texts))]
+    newTexts=separate_list(datas)
+        # if( (r1>=br1 and r1<=br2) )
+
     return newTexts
 
 
@@ -382,13 +456,14 @@ def get_line_result(lis,cur,score1,includeBrandLeft=False,includeBrandRight=Fals
         # print(i, data)
 
         result1 = compData_full(cur, data, score=score1,includeBrandLeft=includeBrandLeft,includeBrandRight=includeBrandRight)
-        curProduct = result1[len(result1) - 1]
-        if(curProduct[2]>=bestScore):
-            bestScore=curProduct[2]
-            pdata = makePdata(curProduct=curProduct)
-            nProduct = 1
-            productList=[pdata]
-            best=(nProduct,productList)
+        if(len(result1)!=0):
+            curProduct = result1[len(result1) - 1]
+            if(curProduct[2]>=bestScore):
+                bestScore=curProduct[2]
+                pdata = makePdata(curProduct=curProduct)
+                nProduct = 1
+                productList=[pdata]
+                best=(nProduct,productList)
 
 
     return best[0], best[1], bestScore
@@ -458,6 +533,82 @@ def get_line_result(lis,cur,score1,includeBrandLeft=False,includeBrandRight=Fals
 #
 #
 #     return best
+
+#
+#
+# def get_product(lis,cur,score1,score2):
+#     '''
+#     lis : line List ex) ['더페이스샾','스킨']
+#     cur : db product name, cur은 product name을 문자열 길이 수순으로 정렬되었습니다
+#     lenDict: {1:(0,23), 2:(23,230).... 문자열 길이 1은 cur[0:23]입니다
+#     score1 : compChunk를 이용해 targetText를 db와 비교하는데 이 비교를 중단하는 임계 깞입니다
+#     score2 : 줄단위 비교 또는 전체 비교를 수행하는데 이를 정답이라 인정 가능한 임계 값입니다
+#     '''
+#     print("line")
+#     for i in lis:
+#         print(i)
+#     fullText = ' '.join(lis)
+#     print("fullText\n",fullText)
+#
+#     result = compData_full(cur, fullText, score=score1,includeBrandLeft=True)
+#     # print(' 5',result,'5')
+#     bestScore=result[len(result)-1][2]
+#     pdata = makePdata(curProduct=result[len(result) - 1])
+#     nProduct = 1
+#     productList = [pdata]
+#     print("fullTextBrandLeft : ", result[len(result)-1])
+#     best=(nProduct,productList)
+#     if(bestScore>=score2):
+#         return best
+#
+#     result = compData_full(cur, fullText, score=score1, includeBrandRight=True)
+#     curScore = result[len(result) - 1][2]
+#     pdata = makePdata(curProduct=result[len(result) - 1])
+#     nProduct = 1
+#     productList = [pdata]
+#     print("fullTextBrandRight : ", result[len(result)-1])
+#
+    # if (curScore >= score2):
+    #     return (nProduct,productList)
+    # elif(curScore>bestScore):
+    #     best=(nProduct,productList)
+    #     bestScore=curScore
+#
+#     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1)
+#
+#     print("onlyLine : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
+#
+#     if(curScore>=score2):
+#         return nProduct,productList
+#     elif(curScore>bestScore):
+#         best=(nProduct,productList)
+#         bestScore = curScore
+#
+#     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandLeft=True)
+#     print("line + brandKor : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
+#     if (curScore >= score2):
+#         return nProduct, productList
+#     elif (curScore > bestScore):
+#         best = (nProduct, productList)
+#         bestScore = curScore
+#
+#     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandRight=True)
+#     print("line + brandEng : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
+#     if (curScore >= score2):
+#         return nProduct, productList
+#     elif (curScore > bestScore):
+#         best = (nProduct, productList)
+#         # bestScore = curScore
+#
+#
+#     return best
+def getFullText(cur,fullText,score1):
+    return compData_full(cur, fullText, score=score1)
+def getFullTextBrandLeft(cur,fullText,score1):
+    return compData_full(cur, fullText, score=score1, includeBrandLeft=True)
+def getFullTextBrandRight(cur,fullText,score1):
+    return compData_full(cur, fullText, score=score1, includeBrandRight=True)
+
 def get_product(lis,cur,score1,score2):
     '''
     lis : line List ex) ['더페이스샾','스킨']
@@ -466,34 +617,47 @@ def get_product(lis,cur,score1,score2):
     score1 : compChunk를 이용해 targetText를 db와 비교하는데 이 비교를 중단하는 임계 깞입니다
     score2 : 줄단위 비교 또는 전체 비교를 수행하는데 이를 정답이라 인정 가능한 임계 값입니다
     '''
+    bestScore=0
+
     print("line")
     for i in lis:
         print(i)
     fullText = ' '.join(lis)
     print("fullText\n",fullText)
-
-    result = compData_full(cur, fullText, score=score1,includeBrandLeft=True)
-    bestScore=result[len(result)-1][2]
-    pdata = makePdata(curProduct=result[len(result) - 1])
-    nProduct = 1
-    productList = [pdata]
-    print("fullTextBrandLeft : ", result[len(result)-1])
-    best=(nProduct,productList)
-    if(bestScore>=score2):
-        return best
-
-    result = compData_full(cur, fullText, score=score1, includeBrandRight=True)
-    curScore = result[len(result) - 1][2]
-    pdata = makePdata(curProduct=result[len(result) - 1])
-    nProduct = 1
-    productList = [pdata]
-    print("fullTextBrandRight : ", result[len(result)-1])
-
-    if (curScore >= score2):
-        return (nProduct,productList)
-    elif(curScore>bestScore):
-        best=(nProduct,productList)
-        bestScore=curScore
+    fullTextResult=getFullText(cur,fullText,score1)
+    if (len(fullTextResult) != 0):
+        bestScore = fullTextResult[len(fullTextResult) - 1][2]
+        pdata = makePdata(curProduct=fullTextResult[len(fullTextResult) - 1])
+        nProduct = 1
+        productList = [pdata]
+        best = (nProduct, productList)
+        if (bestScore >= score2):
+            return best
+        print("fullTextResult : ", fullTextResult[len(fullTextResult) - 1])
+    fullTextLeft = getFullTextBrandRight(cur,fullText,score1)
+    if (len(fullTextLeft) != 0):
+        curScore = fullTextLeft[len(fullTextLeft) - 1][2]
+        pdata = makePdata(curProduct=fullTextLeft[len(fullTextLeft) - 1])
+        nProduct = 1
+        productList = [pdata]
+        if (curScore >= score2):
+            return (nProduct, productList)
+        elif (curScore > bestScore):
+            best = (nProduct, productList)
+            bestScore = curScore
+        print("fullTextBrandLeft : ", fullTextLeft[len(fullTextLeft)-1])
+    fullTextRight = compData_full(cur, fullText, score=score1, includeBrandRight=True)
+    if (len(fullTextRight) != 0):
+        curScore = fullTextLeft[len(fullTextRight) - 1][2]
+        pdata = makePdata(curProduct=fullTextRight[len(fullTextRight) - 1])
+        nProduct = 1
+        productList = [pdata]
+        if (curScore >= score2):
+            return (nProduct, productList)
+        elif (curScore > bestScore):
+            best = (nProduct, productList)
+            bestScore = curScore
+        print("fullTextBrandLeft : ", fullTextRight[len(fullTextRight) - 1])
 
     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1)
 
@@ -521,10 +685,10 @@ def get_product(lis,cur,score1,score2):
         best = (nProduct, productList)
         # bestScore = curScore
 
-
-    return best
-
-
+    if(bestScore==0):
+        return None
+    else:
+        return best
 
 # @csrf_exempt
 # def api(request):
@@ -613,29 +777,56 @@ def api(request):
             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
 
             texts = ocr.demo(opt,model)
-            parsedText=groupby_api(points,texts,rows,cols)
+            # for i, data in enumerate(points):
+            #     print(data, texts[i])
+            print(texts)
+            # parsedText=groupby_api_legacy(points,texts,rows,cols)
+            parsedText = groupby_api(points, texts)
+            # print(parsedText)
+            # parsedText = groupby_api(points, texts)
             # print("parsedText",parsedText)
             ocr.mkdir()
             os.chdir(curPath)
             lineList=parsedText.split('\n')
             # img = ocr.putText(img, points, texts)
             # print("*"*50)
-            # print("texts")
+            # print("texts",texts)
+            # print(texts)
+            # cv2.namedWindow("img",cv2.WINDOW_NORMAL)
             # cv2.imshow("img",img)
             # cv2.waitKey(0)
-            print(texts)
+
             q = Q()
             for i in texts:
+                # print(i)
                 q.add(Q(name__icontains=i), q.OR)
+                q.add(Q(brand__icontains=i), q.OR)
 
             product = Product.objects.filter(q)
             product = list(product.values())
-            cur = list((p['id'], p['name'], p['brand']) for p in product)
-            nProduct, productList = get_product(lineList, cur, score1=70, score2=95)
+            if(len(product)==0):
+                print("쿼리 결과 0")
+                # product=origin_cur
+                cur=deepcopy(origin_cur)
 
+            else:
+                cur = list((p['id'], p['name'], p['brand']) for p in product)
+            best = get_product(lineList, cur, score1=95, score2=95)
+            if(best==None):
+                pass
+            else:
+                nProduct, productList = best
+                data = dict(nProduct=nProduct)
+
+                for i in range(nProduct):
+                    data[str(i)]=productList[i]
+
+
+                return JsonResponse(data)
 
     data = {
         "name": "파일을 읽을 수 없습니다 ",
+        "status" : "cannot read file"
     }
 
     return JsonResponse(data)
