@@ -760,14 +760,14 @@ def api(request):
     print("FILES'\033[0m'", request.FILES)
     print("cc",request.COOKIES)
     print(type(request))
-    if 'media' in request.FILES and rows!=None and cols!=None:
+    if 'media' in request.FILES:
         uploadfile = request.FILES.get('media', '')
         if uploadfile != '':
             print("여기 들어옴 ")
             # rows = int(request.COOKIES.get('rows', ''))
             # cols = int(request.COOKIES.get('cols', ''))
-            rows=int(rows)
-            cols=int(cols)
+            # rows=int(rows)
+            # cols=int(cols)
             name_old = uploadfile.name
             fs = FileSystemStorage(location='static/source')
             imgname = fs.save(f"src-{name_old}", uploadfile)

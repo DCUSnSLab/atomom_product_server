@@ -18,7 +18,6 @@ import numpy as np
 import shutil
 import time
 def setRecognitionModel(opt):
-    start=time.time()
     """ model configuration """
     if 'CTC' in opt.Prediction:
         converter = CTCLabelConverter(opt.character)
@@ -36,7 +35,6 @@ def setRecognitionModel(opt):
 
     # load model
     # print('loading pretrained model from %s' % opt.saved_model)
-    print("text recognition model load",time.time()-start)
     model.load_state_dict(torch.load(opt.saved_model, map_location=device))
     return (model,converter)
 
@@ -47,6 +45,7 @@ def demo(opt,model):
     # prepare data. two demo images from https://github.com/bgshih/crnn#run-demo
     AlignCollate_demo = AlignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio_with_pad=opt.PAD)
     demo_data = RawDataset(root=opt.image_folder, opt=opt)  # use RawDataset
+
     # print("dataLoader batch size",opt.batch_size)
     demo_loader = torch.utils.data.DataLoader(
         demo_data, batch_size=opt.batch_size,
@@ -121,11 +120,17 @@ import os
 def saveCraftResult(dirPath,imgs,img):
     cnt=0
     for i in imgs:
+        # cv2.imshow(str(cnt), i)
         savePath= os.path.join(dirPath, str(cnt)+".jpg")
         cv2.imwrite(savePath,i)
         cnt+=1
+
     savePath = os.path.join(dirPath, "result" + ".jpg")
     cv2.imwrite(savePath, img)
+    # print(savePath)
+
+    # cv2.imshow("img", img)
+    # cv2.waitKey(0)
 
     #
     # ROOT_DIR = dirPath
@@ -151,14 +156,30 @@ def getCraftResult(imagePath,craftModel):
     return resultImgs, img,points
 def putText(img,points,texts):
     # print(len(points),len(texts))
-    fontSize=64
-    font = ImageFont.truetype('malgun.ttf', fontSize)
+    font = 64
+    fontSize = 4032
+    # print(img.shape)
+    rows,cols,_=img.shape
+    cnt=1
+    tempSize=max(rows,cols)
+
+    while(True):
+        if(tempSize>(fontSize/cnt)):
+            break
+        else:
+            cnt+=1
+    # print("tempSize",font/cnt)
+    font=int(font/cnt)
+    font=10
+    # fontSize=
+
+    font = ImageFont.truetype('malgun.ttf', font)
     img_pil = Image.fromarray(img)
     draw = ImageDraw.Draw(img_pil)
     for i in range(len(points)):
         point=points[i]
         text=texts[i]
-        draw.text((point[1],point[0]), text, font=font, fill=(255, 0, 255, 0))
+        draw.text((point[1],point[0]), text, font=font, fill=(0, 215, 255, 0))
         # cv2.putText는 한글안됨
         # cv2.putText(img, text, (point[1],point[0]), cv2.FONT_HERSHEY_SIMPLEX, 5, (255, 0, 255), 5, cv2.LINE_AA)
     img = np.array(img_pil)
@@ -204,9 +225,11 @@ def setModel():
     )
     """ Model Architecture """
 
-    print(torch.cuda.get_device_name(0))
-    print("cuda is available ", torch.cuda.is_available())
-    print(opt, type(opt))
+    print("\033[31mcuda is available ", torch.cuda.is_available())
+    print("     gpu",torch.cuda.get_device_name(0))
+
+    # print(opt, type(opt))
+
     # os.system("pause")
     """ vocab / character number configuration """
     if opt.sensitive:
@@ -220,11 +243,15 @@ def setModel():
     tempPath = "./temps"  # craft로 분리된 문자열이 저장되는 곳입니다
     mkdir(tempPath)
     opt.image_folder = tempPath
-    print("-"*50)
-    print(os.getcwd())
-    print("-" * 50)
+    # print("-"*50)
+    # print(os.getcwd())
+    # print("-" * 50)
+    t1=time.time()
     craftModel = craft_demo.loadModel()
+    print("text detection model load, elapsed time:",time.time()-t1)
+    t2 = time.time()
     model = setRecognitionModel(opt)
+    print("text recognition model load, elapsed time:", time.time() - t2,'\033[0m')
     return craftModel,model, opt
 def mkdir(path="./temps"):
     if os.path.exists(path):
@@ -233,18 +260,130 @@ def mkdir(path="./temps"):
         os.makedirs(path)
     return path
 
+def endLineCHeck(i,datas,newText,newTexts):
+    if (i >= len(datas) - 1):
+        newText = sorted(newText, key=lambda x: (abs(x[1])))
+        newText = [i[4] for i in newText]
+        # os.system('pause')
+        newTexts += ' '.join(newText) + '\n'
+        return newTexts
+    else:
+        return newTexts
+
+def separate_list(datas):
+    check = False
+    newTexts = ""
+    newText = []
+    i = 0
+    # print("ocr result")
+    # print(datas)
+    # print("*" * 50)
+    print("*" * 50)
+    print("separate_list")
+    for i, data in enumerate(datas):
+        print(data,i,len(datas)-1)
+        if (check == False):
+            # 라인 시작 부분 체크
+            check = True
+            bdata = data
+            newText.append(data)
+            continue
+        br1, bc1, br2, bc2, t1 = bdata
+        r1, c1, r2, c2, t2 = data
+        range1 = range(br1, br2 + 1)
+        range2 = range(r1, r2 + 1)
+        x = set(range1)
+        x = x.intersection(range2)
+        print("     교집합 원소수:",len(x), "기준 원소 수",len(range1) / 2.5)
+        if (len(x) == 0):
+            print(newText)
+            newText = sorted(newText, key=lambda x: (abs(x[1])))
+            newText=[i[4] for i in newText]
+            # os.system('pause')
+            newTexts += ' '.join(newText)+'\n'
+            newText = []
+            newText.append(data)
+            bdata = data
+            print("교집합 원소수:",len(x), "기준 원소 수",len(range1) / 2.5,"     분리1")
+            newTexts=endLineCHeck(i=i,datas=datas,newText=newText,newTexts=newTexts)
+        elif ((len(range1) / 2.5 >= len(x))):
+            newText = sorted(newText, key=lambda x: (abs(x[1])))
+            print(newText)
+            newText = [i[4] for i in newText]
+            newTexts += ' '.join(newText) + '\n'
+            newText = []
+            newText.append(data)
+            bdata = data
+            print("교집합 원소수:",len(x), "기준 원소 수",len(range1) / 2.5,"     분리2")
+            newTexts=endLineCHeck(i=i,datas=datas,newText=newText,newTexts=newTexts)
+        else:
+            newText.append(data)
+            newTexts=endLineCHeck(i=i,datas=datas,newText=newText,newTexts=newTexts)
+    print("*"*50)
+    print("lineResult")
+    print(newTexts)
+    return newTexts
+
+
+
+
+def groupby_api(points,texts):
+
+
+    #포인트들에 텍스트 추가 (1,3,2,3,타이레놀)
+    print("*" * 50)
+    print("ocrResult")
+    datas=[(*points[i],texts[i]) for i in range(len(texts))]
+    print(datas)
+    print("*"*50)
+    print("sorting by y2")
+    datas=sorted(datas,key = lambda x : (x[2]))
+    print(datas)
+    print("*" * 50)
+    print("sorting by multiple criteria(y2,x2)")
+    # datas = sorted(datas, key=lambda x: (x[2],x[3]))
+    # print(datas)
+
+    # os.system('pause')
+    newTexts=separate_list(datas)
+        # if( (r1>=br1 and r1<=br2) )
+
+    return newTexts
+
+
 if __name__ == '__main__':
-    imgPath = "./demo_image/1.jpg"
+    name="003"
+    # imgPath = "C:/Users/dgdgk/Desktop/atomom_product_server/cosmetic_demo_image/"+name+".jpg"
+    imgPath= "C:/Users/dgdgk/Desktop/atomom_product_server/test_image/"+name+".jpg"
     craftModel, model, opt = setModel()
 
     img,points=craftOperation(imgPath,craftModel,dirPath=opt.image_folder)
 
+    # print(points)
+    #
+    # rows, cols, _ = img.shape
+    # zeros = np.zeros((rows, cols), dtype=np.uint8)
+    # for i in points:
+    #     y1, x1, y2, x2 = i
+    #     cv2.rectangle(zeros, (x1, y1), (x2, y2), (255, 0, 0), 5)
+    # cum = []
+    # x, y = np.where(zeros == 255)
+    # for i, data in enumerate(x):
+    #     zeros[x[i], y[i]] = 255
+    #     cum.append([y[i], x[i]])
+    # np.save('C:/Users/dgdgk/Documents/text/'+name, zeros)
+
+
     texts=demo(opt,model)
-    img=putText(img,points, texts)
+    groupby_api(points,texts)
 
-
-    cv2.namedWindow("img", cv2.WINDOW_NORMAL)
-    cv2.imshow("img", img)
-    cv2.waitKey(0)
+    # img=putText(img,points, texts)
+    #
+    #
+    # cv2.namedWindow("img", cv2.WINDOW_NORMAL)
+    # cv2.namedWindow(name, cv2.WINDOW_NORMAL)
+    # cv2.imshow("img", img)
+    # cv2.imshow(name, zeros)
+    # cv2.waitKey(0)
 
 

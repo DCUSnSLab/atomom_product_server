@@ -65,6 +65,7 @@ def saveResult(img_file, img, boxes, dirname='./result/', verticals=None, texts=
                 arr=poly.reshape((-1, 1, 2))
                 # print(arr[0][0])
                 # print(arr[0][0][0],arr[2][0][0],arr[0][0][1],arr[2][0][1])
+
                 croped=img[arr[0][0][1]:arr[2][0][1],arr[0][0][0]:arr[2][0][0]]
                 # cv2.imshow("cr",croped)
                 # cv2.waitKey(0)
@@ -119,13 +120,30 @@ def saveResult_modified(img_file, img, boxes, dirname='./result/', verticals=Non
             # print(poly.reshape((-1, 1, 2)))
             # print(len(poly.reshape((-1, 1, 2))))
             arr = poly.reshape((-1, 1, 2))
+            # print(arr[0][0][1])
+            # print(arr)
+            ltx, lty = arr[0][0]
+            rtx, rty = arr[1][0]
+            rbx, rby = arr[2][0]
+            lbx, lby = arr[3][0]
+            x1 = ltx
+            y1 = min(lty, rty)
+            x2 = rbx
+            y2 = max(rby, lby)
+
             # print(arr[0][0])
             # print(arr[0][0][0], arr[2][0][0], arr[0][0][1], arr[2][0][1])
-            croped = src[arr[0][0][1]:arr[2][0][1], arr[0][0][0]:arr[2][0][0]]
+            # croped = src[arr[0][0][1]:arr[2][0][1], arr[0][0][0]:arr[2][0][0]]
+            croped = src[y1:y2, x1:x2]
             # y1,y2=(arr[0][0][1],arr[2][0][1])
             # x1,x2=(arr[0][0][0]<arr[2][0][0])
             # points.append((arr[0][0][1],arr[0][0][0]))
-            points.append((arr[0][0][1], arr[0][0][0],arr[2][0][1],arr[2][0][0]))
+
+
+            # print(ltx,lty,rtx,rty,rbx,rby,lbx,lby)
+            # points.append((arr[0][0][1], arr[0][0][0],arr[2][0][1],arr[2][0][0]))
+            points.append((y1, x1, y2, x2))
+            print((y1, x1, y2, x2))
             #print(poly.reshape((-1, 1, 2)))
             # for i in poly.reshape((-1, 1, 2)):
             #     i=i[0]

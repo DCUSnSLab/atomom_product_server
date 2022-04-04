@@ -253,11 +253,18 @@ class RawDataset(Dataset):
         return (img, self.image_path_list[index])
 class RawDataset2(Dataset):
 
-    def __init__(self, opt,imgPath):
+    def __init__(self, root, opt):
         self.opt = opt
-        self.image_path=imgPath
-        # self.image_path_list = natsorted(self.image_path_list)
-        self.nSamples = 1
+        self.image_path_list = []
+        for dirpath, dirnames, filenames in os.walk(root):
+            for name in filenames:
+                _, ext = os.path.splitext(name)
+                ext = ext.lower()
+                if ext == '.jpg' or ext == '.jpeg' or ext == '.png':
+                    self.image_path_list.append(os.path.join(dirpath, name))
+
+        self.image_path_list = natsorted(self.image_path_list)
+        self.nSamples = len(self.image_path_list)
 
     def __len__(self):
         return self.nSamples
@@ -266,9 +273,9 @@ class RawDataset2(Dataset):
 
         try:
             if self.opt.rgb:
-                img = Image.open(self.image_path).convert('RGB')  # for color image
+                img = Image.open(self.image_path_list[index]).convert('RGB')  # for color image
             else:
-                img = Image.open(self.image_path).convert('L')
+                img = Image.open(self.image_path_list[index]).convert('L')
 
         except IOError:
             print(f'Corrupted image for {index}')
@@ -278,7 +285,7 @@ class RawDataset2(Dataset):
             else:
                 img = Image.new('L', (self.opt.imgW, self.opt.imgH))
 
-        return (img, self.image_path)
+        return (img, self.image_path_list[index])
 
 
 class ResizeNormalize(object):

@@ -7,8 +7,9 @@ from tqdm import tqdm
 # https://runebook.dev/ko/docs/django/ref/request-response
 def getSingle(opt):
     fileName=opt.fileName
-    origin_path="../../cosmetic_demo_image"
-    roi_path="../../test_image"
+    origin_path=opt.origin_path
+    roi_path=opt.roi_path
+    print(origin_path,os.path.join(origin_path,fileName))
     img=cv2.imread(os.path.join(origin_path,fileName))
     rows,cols,_=img.shape
     data={'rows': str(rows), 'cols': str(cols)}
@@ -45,7 +46,7 @@ def getMulti(opt):
         img=cv2.imread(os.path.join(origin_path,fileName))
         rows,cols,_=img.shape
         data={'rows': str(rows), 'cols': str(cols)}
-        print(data)
+        # print(data)
         files = {'media': open(os.path.join(roi_path,fileName), 'rb')}
         # print(type(files))
 
@@ -54,7 +55,7 @@ def getMulti(opt):
         j = response.json()
         path = 'C:/Users/dgdgk/Documents'
         file_name = fileName.split(".")
-        print(fileName, file_name)
+        print('\n',fileName, file_name,'\n')
         file_name = file_name[0] + ".json"
         with open(os.path.join(path, file_name), 'w', encoding='UTF-8') as outfile:
             # json.dump(j, outfile,ensure_ascii=False,indent='\t')
@@ -63,6 +64,7 @@ def getMulti(opt):
         # print(response.content)
         # print(response.text)
         # print(response.content)
+        os.system('pause')
 
 
 
@@ -71,8 +73,8 @@ if __name__ == '__main__':
     # python ./api_test.py --multi True
     parser = argparse.ArgumentParser()
     parser.add_argument('--fileName')
-    parser.add_argument('--origin_path', default="../../cosmetic_demo_image")
-    parser.add_argument('--roi_path', default="../../test_image")
+    parser.add_argument('--origin_path', default="../../origin/")
+    parser.add_argument('--roi_path', default="../../roi/")
     parser.add_argument('--single', default=False,help="True or False")
     parser.add_argument('--multi', default=False,help="True or False")
     opt=parser.parse_args()
