@@ -1,3 +1,5 @@
+import time
+
 from similarity_matching import getChunk, compData_chunk, compData_full
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import render
@@ -774,9 +776,11 @@ def api(request):
 
             imgPath=curPath+f"./static/source/{imgname}"
             os.chdir(path)
+            t1=time.time()
             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
 
             texts = ocr.demo(opt,model)
+            print("model time:", time.time() - t1)
             # for i, data in enumerate(points):
             #     print(data, texts[i])
             print(texts)
