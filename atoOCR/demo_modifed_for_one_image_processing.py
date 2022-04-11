@@ -247,6 +247,7 @@ def setModel():
     # print(os.getcwd())
     # print("-" * 50)
     t1=time.time()
+    torch.tensor(1).cuda(0)
     craftModel = craft_demo.loadModel()
     print("text detection model load, elapsed time:",time.time()-t1)
     t2 = time.time()
@@ -355,9 +356,14 @@ if __name__ == '__main__':
     name="003"
     # imgPath = "C:/Users/dgdgk/Desktop/atomom_product_server/cosmetic_demo_image/"+name+".jpg"
     imgPath= "C:/Users/dgdgk/Desktop/atomom_product_server/test_image/"+name+".jpg"
+    imgPath = "../roi/016.jpg"
+    # imgPath = "../demo_image/1.jpg"
+    # img=cv2.imread(imgPath)
+    # cv2.imshow("img",img)
+    # cv2.waitKey(0)
     craftModel, model, opt = setModel()
-
-    img,points=craftOperation(imgPath,craftModel,dirPath=opt.image_folder)
+    t1 = time.time()
+    img, points = craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
 
     # print(points)
     #
@@ -373,9 +379,10 @@ if __name__ == '__main__':
     #     cum.append([y[i], x[i]])
     # np.save('C:/Users/dgdgk/Documents/text/'+name, zeros)
 
-
-    texts=demo(opt,model)
-    groupby_api(points,texts)
+    texts = demo(opt, model)
+    #     groupby_api(points,texts)
+    print(texts)
+    print(time.time() - t1)
 
     # img=putText(img,points, texts)
     #
