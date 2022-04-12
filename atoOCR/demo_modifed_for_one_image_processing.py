@@ -6,17 +6,20 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.utils.data
 import torch.nn.functional as F
-
+from torch.nn.parallel import DistributedDataParallel as DDP
 from utils import CTCLabelConverter, AttnLabelConverter
 from dataset import RawDataset, AlignCollate
 from model import Model
 from craftPytorch import craft_demo
 from PIL import ImageFont, ImageDraw, Image
+import os
+# os.environ["CUDA_VISIBLE_DEVICES"]="0"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 import cv2
 import numpy as np
 import shutil
 import time
+
 def setRecognitionModel(opt):
     """ model configuration """
     if 'CTC' in opt.Prediction:
@@ -31,11 +34,32 @@ def setRecognitionModel(opt):
     # print('model input parameters', opt.imgH, opt.imgW, opt.num_fiducial, opt.input_channel, opt.output_channel,
     #       opt.hidden_size, opt.num_class, opt.batch_max_length, opt.Transformation, opt.FeatureExtraction,
     #       opt.SequenceModeling, opt.Prediction)
-    model = torch.nn.DataParallel(model).to(device)
+#     model = torch.nn.DataParallel(model).to(device)
+#     print("device",device)
+#     model.to(device)
+#     model = torch.nn.DataParallel(model).to(device)
+    print("device:",device,str(device))
+#     print(torch.device())
+#     device = torch.device('cuda:0,1' if torch.cuda.is_available() else "cpu")
+    model = torch.nn.DataParallel(model,device_ids=[0,1])
+    model.to(device)
+    
 
     # load model
     # print('loading pretrained model from %s' % opt.saved_model)
     model.load_state_dict(torch.load(opt.saved_model, map_location=device))
+#     print(opt.saved_model)
+#     print(torch.load(opt.saved_model, map_location=device))
+#     checkpoint = torch.load(opt.saved_model, map_location=device)
+#     for key in list(checkpoint.keys()):
+#         if 'model.' in key:
+#             checkpoint[key.replace('model.', '')] = checkpoint[key]
+#             del checkpoint[key]
+#     model.load_state_dict(checkpoint)
+
+
+
+
     return (model,converter)
 
 
@@ -50,7 +74,7 @@ def demo(opt,model):
     demo_loader = torch.utils.data.DataLoader(
         demo_data, batch_size=opt.batch_size,
         shuffle=False,
-        # num_workers=int(opt.workers),
+#         num_workers=int(opt.workers),
         num_workers=int(0),
         collate_fn=AlignCollate_demo, pin_memory=True)
     # print(demo_loader)
@@ -138,7 +162,11 @@ def saveCraftResult(dirPath,imgs,img):
     # image_list = list(image1.glob('*.jpg'))
     # 이건 실험 코드 175부터
 def getCraftResult(imagePath,craftModel):
+    
+
     imgs, img,points = craft_demo.main(imagePath,craftModel)
+    
+
     # print(len(imgs))
     resultImgs=[]
     cnt=0
@@ -153,6 +181,7 @@ def getCraftResult(imagePath,craftModel):
             del points[cnt]
             cnt-=1
         cnt+=1
+
     return resultImgs, img,points
 def putText(img,points,texts):
     # print(len(points),len(texts))
@@ -187,6 +216,7 @@ def putText(img,points,texts):
     return img
 
 def craftOperation(imgPath,craftModel,dirPath):
+    #print('craftOperation')
     imgs,img,points=getCraftResult(imgPath,craftModel)
     if not (os.path.isdir(dirPath)):
         os.makedirs(os.path.join(dirPath))
@@ -238,6 +268,8 @@ def setModel():
     cudnn.benchmark = True
     cudnn.deterministic = True
     opt.num_gpu = torch.cuda.device_count()
+#     opt.num_gpu = 1
+    print("num_gpu: ",opt.num_gpu)
 
 
     tempPath = "./temps"  # craft로 분리된 문자열이 저장되는 곳입니다
@@ -247,7 +279,7 @@ def setModel():
     # print(os.getcwd())
     # print("-" * 50)
     t1=time.time()
-    torch.tensor(1).cuda(0)
+    torch.tensor(1).cuda(0).cuda(1)
     craftModel = craft_demo.loadModel()
     print("text detection model load, elapsed time:",time.time()-t1)
     t2 = time.time()
@@ -355,15 +387,16 @@ def groupby_api(points,texts):
 if __name__ == '__main__':
     name="003"
     # imgPath = "C:/Users/dgdgk/Desktop/atomom_product_server/cosmetic_demo_image/"+name+".jpg"
-    imgPath= "C:/Users/dgdgk/Desktop/atomom_product_server/test_image/"+name+".jpg"
-    imgPath = "../roi/016.jpg"
-    # imgPath = "../demo_image/1.jpg"
-    # img=cv2.imread(imgPath)
-    # cv2.imshow("img",img)
-    # cv2.waitKey(0)
+    #imgPath= "C:/Users/dgdgk/Desktop/atomom_product_server/test_image/"+name+".jpg"
+
+    imgPath= "../roi/016.jpg"
+#     imgPath= "../demo_image/1.jpg"
+    img=cv2.imread(imgPath);
+    
     craftModel, model, opt = setModel()
-    t1 = time.time()
-    img, points = craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
+    t1=time.time()
+    img,points=craftOperation(imgPath,craftModel,dirPath=opt.image_folder)
+
 
     # print(points)
     #
@@ -379,10 +412,11 @@ if __name__ == '__main__':
     #     cum.append([y[i], x[i]])
     # np.save('C:/Users/dgdgk/Documents/text/'+name, zeros)
 
-    texts = demo(opt, model)
-    #     groupby_api(points,texts)
+
+    texts=demo(opt,model)
+#     groupby_api(points,texts)
     print(texts)
-    print(time.time() - t1)
+    print(time.time()-t1)
 
     # img=putText(img,points, texts)
     #

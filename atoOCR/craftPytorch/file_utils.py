@@ -143,7 +143,7 @@ def saveResult_modified(img_file, img, boxes, dirname='./result/', verticals=Non
             # print(ltx,lty,rtx,rty,rbx,rby,lbx,lby)
             # points.append((arr[0][0][1], arr[0][0][0],arr[2][0][1],arr[2][0][0]))
             points.append((y1, x1, y2, x2))
-            print((y1, x1, y2, x2))
+            #print((y1, x1, y2, x2))
             #print(poly.reshape((-1, 1, 2)))
             # for i in poly.reshape((-1, 1, 2)):
             #     i=i[0]

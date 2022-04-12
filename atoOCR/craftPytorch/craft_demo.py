@@ -67,16 +67,14 @@ def str2bool(v):
 
 def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly,args, refine_net=None):
     t0 = time.time()
-
     # resize
     img_resized, target_ratio, size_heatmap = imgproc.resize_aspect_ratio(image, args.canvas_size, interpolation=cv2.INTER_LINEAR, mag_ratio=args.mag_ratio)
     ratio_h = ratio_w = 1 / target_ratio
-
     # preprocessing
     x = imgproc.normalizeMeanVariance(img_resized)
     x = torch.from_numpy(x).permute(2, 0, 1)    # [h, w, c] to [c, h, w]
     x = Variable(x.unsqueeze(0))                # [c, h, w] to [b, c, h, w]
-
+    
     # print(cuda)
     if cuda:
         x = x.cuda()
@@ -99,8 +97,8 @@ def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly,ar
         score_link = y_refiner[0,:,:,0].cpu().data.numpy()
     t3 = time.time() - t3
     t4 = time.time()
-
     # Post-processing
+
     boxes, polys = craft_utils.getDetBoxes(score_text, score_link, text_threshold, link_threshold, low_text, poly)
 
     # coordinate adjustment
@@ -117,7 +115,7 @@ def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly,ar
     ret_score_text = imgproc.cvt2HeatmapImg(render_img)
     t5 = time.time() - t5
 
-    # print("t1",t1)
+#     print("t1",t1)
     # print("t2", t2)
     # print("t3", t3)
     # print("t4", t4)
@@ -126,6 +124,7 @@ def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly,ar
 
     return boxes, polys, ret_score_text
 def loadModel():
+    t0=time.time()
     args = argparse.Namespace(
         trained_model=str("./craftPytorch/craft_mlt_25k.pth"),
         text_threshold=float(0.7),
@@ -140,7 +139,7 @@ def loadModel():
         refine=False,
         refiner_model=str('weights/craft_refiner_CTW1500.pth')
     )
-
+    
     if not (os.path.isdir(args.test_folder)):
         os.makedirs(os.path.join(args.test_folder))
 
@@ -150,6 +149,7 @@ def loadModel():
     result_folder = './result/'
     if not os.path.isdir(result_folder):
         os.mkdir(result_folder)
+    t0=time.time()-t0
     #
     # print("-------------------")
 
@@ -158,15 +158,17 @@ def loadModel():
     # print("-------------------")
     # image_list.append(imgPath)
     # load net
-    net = craft_modified.CRAFT()  # initialize
-
+    t1=time.time()
+    net = craft_modified.CRAFT(pretrained=True).cuda()  # initialize
+    t1=time.time()-t1
     # print('Loading weights from checkpoint (' + args.trained_model + ')')
-
+    t2=time.time()
     if args.cuda:
         net.load_state_dict(copyStateDict(torch.load(args.trained_model)))
     else:
         net.load_state_dict(copyStateDict(torch.load(args.trained_model, map_location='cpu')))
-
+    t2=time.time()-t2
+    t3=time.time()
     if args.cuda:
         net = net.cuda()
         net = torch.nn.DataParallel(net)
@@ -176,13 +178,17 @@ def loadModel():
 
     # LinkRefiner
     refine_net = None
-
+    t3=time.time()-t3
+#     print("load_model t0",t0)
+#     print("load_model t1",t1)
+#     print("load_model t2",t2)
+#     print("load_model t3",t3)
 
     return (net,args,refine_net,result_folder)
 def main(imgPath,model):
+    
     image_list=[imgPath]
     net,args,refine_net,result_folder=model
-
     t = time.time()
 
     # load data
@@ -192,7 +198,6 @@ def main(imgPath,model):
         # print("cnt",cnt)
         cnt+=1
         time3=time.time()
-        # print("Test image {:d}/{:d}: {:s}".format(k + 1, len(image_list), image_path), end='\r')
         image = imgproc.loadImage(image_path)
         time3=time.time()-time3
         time4=time.time()
@@ -210,30 +215,20 @@ def main(imgPath,model):
         time5=time.time()
         imgs,img,points=file_utils.saveResult_modified(image_path, image[:, :, ::-1], polys, dirname=result_folder)
         time5=time.time()-time5
-    time2=time.time()-time2
 
-    # print("추론 및 저장 시간",time2)
-    # print("    이미지 로드",time3)
-    # print("     추론 시간",time4)
-    # print("     저장 시간",time5)
+#     print("추론 및 저장 시간",time.time()-time2)
+#     print("    이미지 로드",time3)
+#     print("     추론 시간",time4)
+#     print("     저장 시간",time5)
 
     # print("elapsed time : {}s".format(time.time() - t))
     # shutil.rmtree(args.test_folder)
     if os.path.exists(args.test_folder):
         for file in os.scandir(args.test_folder):
             os.remove(file.path)
-
+    
 
     return imgs,img,points
-import pytesseract
-def getText(img, lang="kor"):
-    text = pytesseract.image_to_string(img, lang=lang)
-    text = text.split("\n")
-    # text = text.replace('\n', '')
-    # text = text.replace('\x0c', '')
-    text = text[0]
-#     print(text)
-    return text;
 
 if __name__ == '__main__':
     imgPath="./test/name2.png"

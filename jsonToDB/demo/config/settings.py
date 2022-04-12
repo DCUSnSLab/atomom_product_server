@@ -88,7 +88,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql', # mysqlclient librarly 설치
         'NAME': 'atodb',
         'USER': 'root',
-        'PASSWORD': 'qwer1234', # mariaDB 설치 시 입력한 root 비밀번호 입력
+        'PASSWORD': '20121208', # mariaDB 설치 시 입력한 root 비밀번호 입력
         'HOST': 'localhost',
         'PORT': ''
     }

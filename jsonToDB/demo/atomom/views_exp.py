@@ -617,14 +617,18 @@ def get_product(lis,cur,score1,score2):
     score1 : compChunk를 이용해 targetText를 db와 비교하는데 이 비교를 중단하는 임계 깞입니다
     score2 : 줄단위 비교 또는 전체 비교를 수행하는데 이를 정답이라 인정 가능한 임계 값입니다
     '''
+    score2=105
     bestScore=0
+    experimentList=[]
 
     print("line")
     for i in lis:
         print(i)
     fullText = ' '.join(lis)
     print("fullText\n",fullText)
+    t1=time.time()
     fullTextResult=getFullText(cur,fullText,score1)
+    t1=time.time()-t1
     if (len(fullTextResult) != 0):
         bestScore = fullTextResult[len(fullTextResult) - 1][2]
         pdata = makePdata(curProduct=fullTextResult[len(fullTextResult) - 1])
@@ -633,8 +637,17 @@ def get_product(lis,cur,score1,score2):
         best = (nProduct, productList)
         if (bestScore >= score2):
             return best
-        print("fullTextResult : ", fullTextResult[len(fullTextResult) - 1])
+
+        if(fullTextResult[len(fullTextResult) - 1][1][0]==None):
+            experimentList.append((None, -1))
+        else:
+            print("fullTextResult : ", fullTextResult[len(fullTextResult) - 1][1][2],fullTextResult[len(fullTextResult) - 1][1][1])
+            experimentList.append((fullTextResult[len(fullTextResult) - 1][1][2]+fullTextResult[len(fullTextResult) - 1][1][1], t1))
+    else:
+        experimentList.append((None,-1))
+    t1 = time.time()
     fullTextLeft = getFullTextBrandRight(cur,fullText,score1)
+    t1 = time.time() - t1
     if (len(fullTextLeft) != 0):
         curScore = fullTextLeft[len(fullTextLeft) - 1][2]
         pdata = makePdata(curProduct=fullTextLeft[len(fullTextLeft) - 1])
@@ -645,8 +658,16 @@ def get_product(lis,cur,score1,score2):
         elif (curScore > bestScore):
             best = (nProduct, productList)
             bestScore = curScore
-        print("fullTextBrandLeft : ", fullTextLeft[len(fullTextLeft)-1])
+        if (fullTextLeft[len(fullTextLeft) - 1][1][0] == None):
+            experimentList.append((None, -1))
+        else:
+            print("fullTextBrandLeft : ", fullTextLeft[len(fullTextLeft)-1][1][2],fullTextLeft[len(fullTextLeft)-1][1][1])
+            experimentList.append((fullTextLeft[len(fullTextLeft)-1][1][2]+fullTextLeft[len(fullTextLeft)-1][1][1], t1))
+    else:
+        experimentList.append((None,-1))
+    t1 = time.time()
     fullTextRight = compData_full(cur, fullText, score=score1, includeBrandRight=True)
+    t1 = time.time() - t1
     if (len(fullTextRight) != 0):
         curScore = fullTextLeft[len(fullTextRight) - 1][2]
         pdata = makePdata(curProduct=fullTextRight[len(fullTextRight) - 1])
@@ -657,38 +678,55 @@ def get_product(lis,cur,score1,score2):
         elif (curScore > bestScore):
             best = (nProduct, productList)
             bestScore = curScore
-        print("fullTextBrandLeft : ", fullTextRight[len(fullTextRight) - 1])
-
+        if (fullTextRight[len(fullTextRight) - 1][1][0] == None):
+            experimentList.append((None, -1))
+        else:
+            print("fullTextBrandRight : ", fullTextRight[len(fullTextRight) - 1][1][2],fullTextRight[len(fullTextRight) - 1][1][1])
+            experimentList.append((fullTextRight[len(fullTextRight) - 1][1][2]+fullTextRight[len(fullTextRight) - 1][1][1], t1))
+    else:
+        experimentList.append((None,-1))
+    t1 = time.time()
     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1)
-
+    t1 = time.time() - t1
     print("onlyLine : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-
+    experimentList.append(
+        (productList[0]['products']['mainProduct']['brand']+productList[0]['products']['mainProduct']['productName'],t1))
     if(curScore>=score2):
         return nProduct,productList
     elif(curScore>bestScore):
         best=(nProduct,productList)
         bestScore = curScore
-
+    t1 = time.time()
     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandLeft=True)
+    t1 = time.time() - t1
+    experimentList.append(
+        (productList[0]['products']['mainProduct']['brand'] + productList[0]['products']['mainProduct']['productName'],
+         t1))
     print("line + brandKor : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
     if (curScore >= score2):
         return nProduct, productList
     elif (curScore > bestScore):
         best = (nProduct, productList)
         bestScore = curScore
-
+    t1 = time.time()
     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandRight=True)
+    t1 = time.time() - t1
+    experimentList.append(
+        (productList[0]['products']['mainProduct']['brand'] + productList[0]['products']['mainProduct']['productName'],
+         t1))
     print("line + brandEng : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
     if (curScore >= score2):
         return nProduct, productList
     elif (curScore > bestScore):
         best = (nProduct, productList)
         # bestScore = curScore
-
+    # print(experimentList)
+    for i in experimentList:
+        print(i)
     if(bestScore==0):
-        return None
+        return None, experimentList
     else:
-        return best
+        return best, experimentList
 
 # @csrf_exempt
 # def api(request):
@@ -813,22 +851,33 @@ def api(request):
 
             else:
                 cur = list((p['id'], p['name'], p['brand']) for p in product)
-            best = get_product(lineList, cur, score1=95, score2=95)
-            if(best==None):
-                pass
-            else:
-                nProduct, productList = best
-                data = dict(nProduct=nProduct)
+            best,lis = get_product(lineList, cur, score1=95, score2=95)
+            #여기서 부터
+            for i in range(len(lis)):
+                res,tim=lis[i]
+                if(res == None or res == ""):
+                    lis[i]=(None,-1)
+            data = {
+                "1_result": lis[0][0],
+                "1_time": lis[0][1],
+                "2_result": lis[1][0],
+                "2_time": lis[1][1],
+                "3_result": lis[2][0],
+                "3_time": lis[2][1],
+                "4_result": lis[3][0],
+                "4_time": lis[3][1],
+                "5_result": lis[4][0],
+                "5_time": lis[4][1],
+                "6_result": lis[5][0],
+                "6_time": lis[5][1],
+            }
 
-                for i in range(nProduct):
-                    data[str(i)]=productList[i]
-
-
-                return JsonResponse(data)
+            return JsonResponse(data)
 
     data = {
-        "name": "파일을 읽을 수 없습니다 ",
-        "status" : "cannot read file"
+        "name": "name",
+        "1_result": "cannot read file",
+        "1_time": "332"
     }
 
     return JsonResponse(data)

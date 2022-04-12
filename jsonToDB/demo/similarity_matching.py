@@ -308,20 +308,6 @@ def experiments(cur,lenDict,score=95):
 
     pass
 
-from etc import excelExport as excel
-def setSheet():
-    wb, ws = excel.makeWb()
-    for i in range(1, 11, 1):
-        if (i == 1):
-            ws.title = str(i)
-        else:
-            ws = wb.create_sheet()
-            ws.title = str(i)
-
-    ws = wb.create_sheet()
-    ws.title = "result"
-    return wb,ws
-
 if __name__ == '__main__':
     target="안녕ㅇ"
     compT="안녕"

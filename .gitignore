@@ -15,6 +15,7 @@
 *.pdf
 **/sdk/*
 **/src/*
+**/static/*
 
 ### Linux ###
 *~

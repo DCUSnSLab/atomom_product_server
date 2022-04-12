@@ -20,6 +20,7 @@ def loadImage2(img_file):
     img = np.array(img)
     return img
 def loadImage(img_file):
+    print("img_file",img_file)
     # img=loadImage1(img_file)
     img=loadImage2(img_file)
 

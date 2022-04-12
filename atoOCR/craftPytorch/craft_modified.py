@@ -7,7 +7,7 @@ MIT License
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import time
 from .basenet.vgg16_bn import vgg16_bn, init_weights
 
 
@@ -30,17 +30,21 @@ class double_conv(nn.Module):
 
 class CRAFT(nn.Module):
     def __init__(self, pretrained=False, freeze=False):
+        t0=time.time()
         super(CRAFT, self).__init__()
-
+        t0=time.time()-t0
+        t1=time.time()
         """ Base network """
         self.basenet = vgg16_bn(pretrained, freeze)
-
+        t1=time.time()-t1
+        t2=time.time()
         """ U network """
         self.upconv1 = double_conv(1024, 512, 256)
         self.upconv2 = double_conv(512, 256, 128)
         self.upconv3 = double_conv(256, 128, 64)
         self.upconv4 = double_conv(128, 64, 32)
-
+        t2=time.time()-t2
+        t3=time.time()
         num_class = 2
         self.conv_cls = nn.Sequential(
             nn.Conv2d(32, 32, kernel_size=3, padding=1), nn.ReLU(inplace=True),
@@ -49,12 +53,19 @@ class CRAFT(nn.Module):
             nn.Conv2d(16, 16, kernel_size=1), nn.ReLU(inplace=True),
             nn.Conv2d(16, num_class, kernel_size=1),
         )
-
+        t3=time.time()-t3
+        t4=time.time()
         init_weights(self.upconv1.modules())
         init_weights(self.upconv2.modules())
         init_weights(self.upconv3.modules())
         init_weights(self.upconv4.modules())
         init_weights(self.conv_cls.modules())
+        t4=time.time()-t4
+#         print("t0",t0)
+#         print("t1",t1)
+#         print("t2",t2)
+#         print("t3",t3)
+#         print("t4",t4)
 
     def forward(self, x):
         """ Base network """
