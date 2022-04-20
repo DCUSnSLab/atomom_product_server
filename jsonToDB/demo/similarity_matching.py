@@ -15,7 +15,7 @@ print(os.getcwd())
 from atomom.models import Product
 from tqdm import tqdm
 from numba import jit
-
+from copy import deepcopy
 
 def getChunk_(lis):
     lens=[[i+1,None] for i in range(90)]
@@ -179,13 +179,18 @@ def compData_full(cur,target,score=90,includeBrandLeft=False,includeBrandRight=F
 
     seq = difflib.SequenceMatcher()
     seq.set_seq1(target)
-    maxValue=0
+    maxValue=-1
     result_list=[]
     brandLeft=""
     brandRight=""
+    # cur=deepcopy(cur2)
+    # cur=list(cur)
     for i, data in enumerate(cur):
+        # if(i==0):
+        #     print(i,data)
         compTarget=data[1]
-        if(includeBrandLeft == True or includeBrandRight == False):
+        if(includeBrandLeft == True or includeBrandRight == True):
+
             if ('(' in data[2]):
                 brand = data[2].split('(')
                 brandLeft = brand[0].strip()+' '
@@ -198,7 +203,8 @@ def compData_full(cur,target,score=90,includeBrandLeft=False,includeBrandRight=F
                 compTarget=brandLeft + data[1]
             elif (includeBrandRight == True):
                 compTarget=brandRight + data[1]
-
+        # if(i==0):
+        #     print("before:"+data[1]+" after:"+compTarget)
         seq.set_seq2(compTarget)
         cur_ratio = (lambda x: seq.quick_ratio() * 100)(0)
         if(maxValue<=cur_ratio):

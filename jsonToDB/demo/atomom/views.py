@@ -410,6 +410,7 @@ def makePdata(curProduct):
     products=dict(mainProduct=main_data)
     products['nsubProduct']=cnt
     products["subProducts"]=subProducts
+    products['similarity']=similarity
     pdata = {
         "products":  products
     }
@@ -444,172 +445,61 @@ def makePdata(curProduct):
 #
 #     return best[0], best[1], bestScore
 
-def get_line_result(lis,cur,score1,includeBrandLeft=False,includeBrandRight=False):
+def get_line_result(lis,cur,score,includeBrandLeft=False,includeBrandRight=False):
     nProduct=0
     productList=[]
     # print(' '.join(lis))
     bestScore=0
-    best=(None,None)
+    best=None
     for i, data in enumerate(lis):
-        check=False
-        # data="에코 에너지 위장 크림 [SPF50+/PA+++]"
-        # print(i, data)
+        result1 = compData_full(cur, data, score=score,includeBrandLeft=includeBrandLeft,includeBrandRight=includeBrandRight)
+        curResult, curScore = fullText_sub(data=result1)
 
-        result1 = compData_full(cur, data, score=score1,includeBrandLeft=includeBrandLeft,includeBrandRight=includeBrandRight)
-        if(len(result1)!=0):
-            curProduct = result1[len(result1) - 1]
-            if(curProduct[2]>=bestScore):
-                bestScore=curProduct[2]
-                pdata = makePdata(curProduct=curProduct)
-                nProduct = 1
-                productList=[pdata]
-                best=(nProduct,productList)
+        if (curResult == False):
+            best,bestScore=curResult,curScore
+            pass
+        else:
+            check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
+            if (check == True):
+                return curResult,score
+            else:
+                best, bestScore = check
 
+    # print("type:"+str(type(best)),"best:",str(best))
+    return best, bestScore
 
-    return best[0], best[1], bestScore
-
-# def get_product_chunk(lis,cur,lenDict,score1,score2):
-#     '''
-#     lis : line List ex) ['더페이스샾','스킨']
-#     cur : db product name, cur은 product name을 문자열 길이 수순으로 정렬되었습니다
-#     lenDict: {1:(0,23), 2:(23,230).... 문자열 길이 1은 cur[0:23]입니다
-#     score1 : compChunk를 이용해 targetText를 db와 비교하는데 이 비교를 중단하는 임계 깞입니다
-#     score2 : 줄단위 비교 또는 전체 비교를 수행하는데 이를 정답이라 인정 가능한 임계 값입니다
-#     '''
-#     print("line")
-#     for i in lis:
-#         print(i)
-#     fullText = ' '.join(lis)
-#     print("fullText\n",fullText)
-#
-#     result = compData_chunk(cur, lenDict, fullText, score=score1,includeBrandKor=True)
-#     bestScore=result[len(result)-1][2]
-#     pdata = makePdata(curProduct=result[len(result) - 1])
-#     nProduct = 1
-#     productList = [pdata]
-#     print("fullTextKorean : ", result[len(result)-1])
-#     best=(nProduct,productList)
-#     if(bestScore>=score2):
-#         return best
-#
-#     result = compData_chunk(cur, lenDict, fullText, score=score1, includeBrandEng=True)
-#     curScore = result[len(result) - 1][2]
-#     pdata = makePdata(curProduct=result[len(result) - 1])
-#     nProduct = 1
-#     productList = [pdata]
-#     print("fullTextEng : ", result[len(result)-1])
-#
-#     if (curScore >= score2):
-#         return (nProduct,productList)
-#     elif(curScore>bestScore):
-#         best=(nProduct,productList)
-#         bestScore=curScore
-#
-#     nProduct,productList, curScore = get_line_result(lis,cur,lenDict,score1,score2)
-#
-#     print("onlyLine : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-#
-#     if(curScore>=score2):
-#         return nProduct,productList
-#     elif(curScore>bestScore):
-#         best=(nProduct,productList)
-#         bestScore = curScore
-#
-#     nProduct, productList, curScore = get_line_result(lis, cur, lenDict, score1, score2, includeBrandKor=True)
-#     print("line + brandKor : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-#     if (curScore >= score2):
-#         return nProduct, productList
-#     elif (curScore > bestScore):
-#         best = (nProduct, productList)
-#         bestScore = curScore
-#
-#     nProduct, productList, curScore = get_line_result(lis, cur, lenDict, score1, score2, includeBrandEng=True)
-#     print("line + brandEng : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-#     if (curScore >= score2):
-#         return nProduct, productList
-#     elif (curScore > bestScore):
-#         best = (nProduct, productList)
-#         # bestScore = curScore
-#
-#
-#     return best
-
-#
-#
-# def get_product(lis,cur,score1,score2):
-#     '''
-#     lis : line List ex) ['더페이스샾','스킨']
-#     cur : db product name, cur은 product name을 문자열 길이 수순으로 정렬되었습니다
-#     lenDict: {1:(0,23), 2:(23,230).... 문자열 길이 1은 cur[0:23]입니다
-#     score1 : compChunk를 이용해 targetText를 db와 비교하는데 이 비교를 중단하는 임계 깞입니다
-#     score2 : 줄단위 비교 또는 전체 비교를 수행하는데 이를 정답이라 인정 가능한 임계 값입니다
-#     '''
-#     print("line")
-#     for i in lis:
-#         print(i)
-#     fullText = ' '.join(lis)
-#     print("fullText\n",fullText)
-#
-#     result = compData_full(cur, fullText, score=score1,includeBrandLeft=True)
-#     # print(' 5',result,'5')
-#     bestScore=result[len(result)-1][2]
-#     pdata = makePdata(curProduct=result[len(result) - 1])
-#     nProduct = 1
-#     productList = [pdata]
-#     print("fullTextBrandLeft : ", result[len(result)-1])
-#     best=(nProduct,productList)
-#     if(bestScore>=score2):
-#         return best
-#
-#     result = compData_full(cur, fullText, score=score1, includeBrandRight=True)
-#     curScore = result[len(result) - 1][2]
-#     pdata = makePdata(curProduct=result[len(result) - 1])
-#     nProduct = 1
-#     productList = [pdata]
-#     print("fullTextBrandRight : ", result[len(result)-1])
-#
-    # if (curScore >= score2):
-    #     return (nProduct,productList)
-    # elif(curScore>bestScore):
-    #     best=(nProduct,productList)
-    #     bestScore=curScore
-#
-#     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1)
-#
-#     print("onlyLine : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-#
-#     if(curScore>=score2):
-#         return nProduct,productList
-#     elif(curScore>bestScore):
-#         best=(nProduct,productList)
-#         bestScore = curScore
-#
-#     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandLeft=True)
-#     print("line + brandKor : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-#     if (curScore >= score2):
-#         return nProduct, productList
-#     elif (curScore > bestScore):
-#         best = (nProduct, productList)
-#         bestScore = curScore
-#
-#     nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandRight=True)
-#     print("line + brandEng : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-#     if (curScore >= score2):
-#         return nProduct, productList
-#     elif (curScore > bestScore):
-#         best = (nProduct, productList)
-#         # bestScore = curScore
-#
-#
-#     return best
-def getFullText(cur,fullText,score1):
-    return compData_full(cur, fullText, score=score1)
-def getFullTextBrandLeft(cur,fullText,score1):
-    return compData_full(cur, fullText, score=score1, includeBrandLeft=True)
-def getFullTextBrandRight(cur,fullText,score1):
-    return compData_full(cur, fullText, score=score1, includeBrandRight=True)
-
-def get_product(lis,cur,score1,score2):
+def getFullText(cur,fullText,score):
+    return compData_full(cur, fullText, score=score)
+def getFullTextBrandLeft(cur,fullText,score):
+    return compData_full(cur, fullText, score=score, includeBrandLeft=True)
+def getFullTextBrandRight(cur,fullText,score):
+    return compData_full(cur, fullText, score=score, includeBrandRight=True)
+def fullText_sub(data):
+    # print("d"+str(data)+"d")
+    check=data[0]
+    if(check[0]==None):
+        return False,False
+    else:
+        bestScore=data[len(data)-1][2]
+        nProduct=0
+        productList=[]
+        rev=data[::-1]
+        for i, product in enumerate(rev):
+            pData=makePdata(curProduct=product)
+            nProduct+=1
+            productList.append(pData)
+        best=(nProduct, productList)
+        return best,bestScore
+def getBest(curResult,curScore,best,bestScore,score):
+    if(curScore>=score):
+        return True
+    elif(curScore>=bestScore):
+        best=curResult
+        bestScore=curScore
+        return best,bestScore
+    else:
+        return best,bestScore
+def get_product(lis,cur,score):
     '''
     lis : line List ex) ['더페이스샾','스킨']
     cur : db product name, cur은 product name을 문자열 길이 수순으로 정렬되었습니다
@@ -618,131 +508,99 @@ def get_product(lis,cur,score1,score2):
     score2 : 줄단위 비교 또는 전체 비교를 수행하는데 이를 정답이라 인정 가능한 임계 값입니다
     '''
     bestScore=0
-
+    best=None
     print("line")
     for i in lis:
         print(i)
     fullText = ' '.join(lis)
     print("fullText\n",fullText)
-    fullTextResult=getFullText(cur,fullText,score1)
-    if (len(fullTextResult) != 0):
-        bestScore = fullTextResult[len(fullTextResult) - 1][2]
-        pdata = makePdata(curProduct=fullTextResult[len(fullTextResult) - 1])
-        nProduct = 1
-        productList = [pdata]
-        best = (nProduct, productList)
-        if (bestScore >= score2):
-            return best
-        print("fullTextResult : ", fullTextResult[len(fullTextResult) - 1])
-    fullTextLeft = getFullTextBrandRight(cur,fullText,score1)
-    if (len(fullTextLeft) != 0):
-        curScore = fullTextLeft[len(fullTextLeft) - 1][2]
-        pdata = makePdata(curProduct=fullTextLeft[len(fullTextLeft) - 1])
-        nProduct = 1
-        productList = [pdata]
-        if (curScore >= score2):
-            return (nProduct, productList)
-        elif (curScore > bestScore):
-            best = (nProduct, productList)
-            bestScore = curScore
-        print("fullTextBrandLeft : ", fullTextLeft[len(fullTextLeft)-1])
-    fullTextRight = compData_full(cur, fullText, score=score1, includeBrandRight=True)
-    if (len(fullTextRight) != 0):
-        curScore = fullTextLeft[len(fullTextRight) - 1][2]
-        pdata = makePdata(curProduct=fullTextRight[len(fullTextRight) - 1])
-        nProduct = 1
-        productList = [pdata]
-        if (curScore >= score2):
-            return (nProduct, productList)
-        elif (curScore > bestScore):
-            best = (nProduct, productList)
-            bestScore = curScore
-        print("fullTextBrandLeft : ", fullTextRight[len(fullTextRight) - 1])
+    print("len",len(list(deepcopy(cur))))
+    # print("len", len(list(cur)))
+    fullTextResult=getFullText(cur,fullText,score)
+    curResult,curScore=fullText_sub(data=fullTextResult)
+    print("\nfullText Result")
+    if(curResult==False):
+        print("     실패")
+    else:
+        check=getBest(curResult=curResult,curScore=curScore,best=best,bestScore=bestScore,score=score)
+        if(check==True):
+            return curResult
+        else:
+            print("     ", check[0][1][0]['products']['mainProduct']['brand'],
+                  check[0][1][0]['products']['mainProduct']['productName'])
+            best,bestScore=check
+    # print("len",len(list(cur)))
+    # print("-"*50)
+    fullTextLeft = getFullTextBrandLeft(cur,fullText,score)
+    # print(fullTextLeft)
+    curResult, curScore = fullText_sub(data=fullTextLeft)
+    print("fullText + bl")
+    if (curResult == False):
+        print("     실패")
+    else:
+        check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
+        if (check == True):
+            return curResult
+        else:
+            print("     ", check[0][1][0]['products']['mainProduct']['brand'],
+                  check[0][1][0]['products']['mainProduct']['productName'])
+            best, bestScore = check
 
-    nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1)
+    fullTextRight = getFullTextBrandRight(cur,fullText,score)
+    curResult, curScore = fullText_sub(data=fullTextRight)
+    print("fullText + br 실패")
+    if (curResult == False):
+        print("     실패")
+    else:
+        check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
+        if (check == True):
+            return curResult
+        else:
+            print("     ", check[0][1][0]['products']['mainProduct']['brand'],
+                  check[0][1][0]['products']['mainProduct']['productName'])
+            best, bestScore = check
 
-    print("onlyLine : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-
-    if(curScore>=score2):
-        return nProduct,productList
-    elif(curScore>bestScore):
-        best=(nProduct,productList)
-        bestScore = curScore
-
-    nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandLeft=True)
-    print("line + brandKor : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-    if (curScore >= score2):
-        return nProduct, productList
-    elif (curScore > bestScore):
-        best = (nProduct, productList)
-        bestScore = curScore
-
-    nProduct,productList, curScore = get_line_result(lis=lis,cur=cur,score1=score1,includeBrandRight=True)
-    print("line + brandEng : ",productList[0]['products']['mainProduct']['brand'],productList[0]['products']['mainProduct']['productName'],"score",curScore)
-    if (curScore >= score2):
-        return nProduct, productList
-    elif (curScore > bestScore):
-        best = (nProduct, productList)
-        # bestScore = curScore
+    curResult, curScore = get_line_result(lis=lis,cur=cur,score=score)
+    print("onlyLine")
+    if (curResult == False):
+        print("     실패")
+    else:
+        check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
+        if (check == True):
+            return curResult
+        else:
+            print("     ", check[0][1][0]['products']['mainProduct']['brand'],
+                  check[0][1][0]['products']['mainProduct']['productName'])
+            best, bestScore = check
+    curResult, curScore = get_line_result(lis=lis, cur=cur, score=score,includeBrandLeft=True)
+    print("line + bl 실패")
+    if (curResult == False):
+        print("     실패")
+    else:
+        check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
+        if (check == True):
+            return curResult
+        else:
+            print("     ", check[0][1][0]['products']['mainProduct']['brand'],
+                  check[0][1][0]['products']['mainProduct']['productName'])
+            best, bestScore = check
+    curResult, curScore = get_line_result(lis=lis, cur=cur, score=score,includeBrandRight=True)
+    print("line + br 실패")
+    if (curResult == False):
+        print("     실패")
+    else:
+        check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
+        if (check == True):
+            return curResult
+        else:
+            print("     ", check[0][1][0]['products']['mainProduct']['brand'],
+                  check[0][1][0]['products']['mainProduct']['productName'])
+            best, bestScore = check
 
     if(bestScore==0):
         return None
     else:
         return best
-
-# @csrf_exempt
-# def api(request):
-#     context = {}
-#     context['menutitle'] = 'OCR READ'
-#     print("*"*50)
-#     print("\033[31mmethod", request.method)
-#     print("keys")
-#     print("     rows", request.GET.get('rows'))
-#     print("     cols", request.GET.get('cols'))
-#     print(request.GET)
-#     rows = request.GET.get('rows')
-#     cols = request.GET.get('cols')
-#     print("FILES'\033[0m'", request.FILES)
-#     print("cc",request.COOKIES)
-#     print(type(request))
-#     if 'media' in request.FILES and rows!=None and cols!=None:
-#         uploadfile = request.FILES.get('media', '')
-#         if uploadfile != '':
-#             print("여기 들어옴 ")
-#             # rows = int(request.COOKIES.get('rows', ''))
-#             # cols = int(request.COOKIES.get('cols', ''))
-#             rows=int(rows)
-#             cols=int(cols)
-#             name_old = uploadfile.name
-#             fs = FileSystemStorage(location='static/source')
-#             imgname = fs.save(f"src-{name_old}", uploadfile)
-#             imgPath=curPath+f"./static/source/{imgname}"
-#             os.chdir(path)
-#             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
-#             texts = ocr.demo(opt,model)
-#             parsedText=groupby_api(points,texts,rows,cols)
-#             # print("parsedText",parsedText)
-#             ocr.mkdir()
-#             os.chdir(curPath)
-#             lineList=parsedText.split('\n')
-#             # nProduct,productList = get_line_result_by_pname(lineList,cur,lenDict,score=70)
-#             nProduct, productList = get_product(lineList, cur, lenDict, score1=70,score2=95)
-#
-#
-#             data= dict(nProduct=nProduct)
-#
-#             for i in range(nProduct):
-#                 data[str(i)]=productList[i]
-#
-#
-#             return JsonResponse(data)
-#     data = {
-#         "name": "파일을 읽을 수 없습니다 ",
-#     }
-#
-#     return JsonResponse(data)
-
-    # return render(request, 'coocr_upload.html', context)
 
 @csrf_exempt
 def api(request):
@@ -809,11 +667,12 @@ def api(request):
             if(len(product)==0):
                 print("쿼리 결과 0")
                 # product=origin_cur
-                cur=deepcopy(origin_cur)
+                cur=list(deepcopy(origin_cur))
+
 
             else:
                 cur = list((p['id'], p['name'], p['brand']) for p in product)
-            best = get_product(lineList, cur, score1=95, score2=95)
+            best = get_product(lineList, cur, score=95)
             if(best==None):
                 pass
             else:
