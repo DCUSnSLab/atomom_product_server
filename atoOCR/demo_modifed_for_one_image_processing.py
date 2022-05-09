@@ -397,7 +397,6 @@ if __name__ == '__main__':
     t1=time.time()
     img,points=craftOperation(imgPath,craftModel,dirPath=opt.image_folder)
 
-
     # print(points)
     #
     # rows, cols, _ = img.shape

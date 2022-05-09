@@ -185,11 +185,14 @@ def compData_full(cur,target,score=90,includeBrandLeft=False,includeBrandRight=F
     brandRight=""
     # cur=deepcopy(cur2)
     # cur=list(cur)
+    # if (includeBrandLeft == True or includeBrandRight == True):
+    #     print("여기")
     for i, data in enumerate(cur):
         # if(i==0):
         #     print(i,data)
         compTarget=data[1]
         if(includeBrandLeft == True or includeBrandRight == True):
+
 
             if ('(' in data[2]):
                 brand = data[2].split('(')
