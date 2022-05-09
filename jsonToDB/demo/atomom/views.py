@@ -504,6 +504,7 @@ def getBest(curResult,curScore,best,bestScore,score):
         return best,bestScore
     else:
         return best,bestScore
+
 def get_product(lis,cur,score):
     '''
     lis : line List ex) ['더페이스샾','스킨']
@@ -522,21 +523,21 @@ def get_product(lis,cur,score):
     print("len",len(list(deepcopy(cur))))
     # print("len", len(list(cur)))
     '''algorithm (1)'''
-    fullTextResult=getFullText(cur,fullText,score)
-    curResult,curScore=fullText_sub(data=fullTextResult)
-    print("\nfullText Result")
-    if(curResult==False):
-        print("     실패")
-    else:
-        check=getBest(curResult=curResult,curScore=curScore,best=best,bestScore=bestScore,score=score)
-        print("     ", curResult[1][0]['products']['mainProduct']['brand'],
-              curResult[1][0]['products']['mainProduct']['productName'], curScore)
-        if(check==True):
-            return curResult
-        else:
-            best,bestScore=check
-    # print("len",len(list(cur)))
-    # print("-"*50)
+    # fullTextResult=getFullText(cur,fullText,score)
+    # curResult,curScore=fullText_sub(data=fullTextResult)
+    # print("\nfullText Result")
+    # if(curResult==False):
+    #     print("     실패")
+    # else:
+    #     check=getBest(curResult=curResult,curScore=curScore,best=best,bestScore=bestScore,score=score)
+    #     print("     ", curResult[1][0]['products']['mainProduct']['brand'],
+    #           curResult[1][0]['products']['mainProduct']['productName'], curScore)
+    #     if(check==True):
+    #         return curResult
+    #     else:
+    #         best,bestScore=check
+    # # print("len",len(list(cur)))
+    # # print("-"*50)
     '''algorithm (2)'''
     fullTextLeft = getFullTextBrandLeft(cur,fullText,score)
     # print(fullTextLeft)
@@ -553,19 +554,19 @@ def get_product(lis,cur,score):
         else:
             best, bestScore = check
     '''algorithm (3)'''
-    fullTextRight = getFullTextBrandRight(cur,fullText,score)
-    curResult, curScore = fullText_sub(data=fullTextRight)
-    print("fullText + br")
-    if (curResult == False):
-        print("     실패")
-    else:
-        check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
-        print("     ", curResult[1][0]['products']['mainProduct']['brand'],
-              curResult[1][0]['products']['mainProduct']['productName'], curScore)
-        if (check == True):
-            return curResult
-        else:
-            best, bestScore = check
+    # fullTextRight = getFullTextBrandRight(cur,fullText,score)
+    # curResult, curScore = fullText_sub(data=fullTextRight)
+    # print("fullText + br")
+    # if (curResult == False):
+    #     print("     실패")
+    # else:
+    #     check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
+    #     print("     ", curResult[1][0]['products']['mainProduct']['brand'],
+    #           curResult[1][0]['products']['mainProduct']['productName'], curScore)
+    #     if (check == True):
+    #         return curResult
+    #     else:
+    #         best, bestScore = check
 
     '''algorithm (4)'''
     curResult, curScore = get_line_result(lis=lis,cur=cur,score=score)
@@ -583,18 +584,18 @@ def get_product(lis,cur,score):
         else:
             best, bestScore = check
     '''algorithm (5)'''
-    curResult, curScore = get_line_result(lis=lis, cur=cur, score=score,includeBrandLeft=True)
-    print("line + bl")
-    if (curResult == False):
-        print("     실패")
-    else:
-        check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
-        print("     ", curResult[1][0]['products']['mainProduct']['brand'],
-              curResult[1][0]['products']['mainProduct']['productName'], curScore)
-        if (check == True):
-            return curResult
-        else:
-            best, bestScore = check
+    # curResult, curScore = get_line_result(lis=lis, cur=cur, score=score,includeBrandLeft=True)
+    # print("line + bl")
+    # if (curResult == False):
+    #     print("     실패")
+    # else:
+    #     check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
+    #     print("     ", curResult[1][0]['products']['mainProduct']['brand'],
+    #           curResult[1][0]['products']['mainProduct']['productName'], curScore)
+    #     if (check == True):
+    #         return curResult
+    #     else:
+    #         best, bestScore = check
     '''algorithm (6)'''
     curResult, curScore = get_line_result(lis=lis, cur=cur, score=score,includeBrandRight=True)
     print("line + br")
