@@ -568,21 +568,22 @@ def get_product(lis,cur,score):
     #     else:
     #         best, bestScore = check
 
-    '''algorithm (4)'''
-    curResult, curScore = get_line_result(lis=lis,cur=cur,score=score)
-    # print("curREst",str(curResult))
+    # '''algorithm (4)'''
+    # curResult, curScore = get_line_result(lis=lis,cur=cur,score=score)
+    # # print("curREst",str(curResult))
+    #
+    # print("onlyLine")
+    # if (curResult == False):
+    #     print("     실패")
+    # else:
+    #     check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
+    #     print("     ", curResult[1][0]['products']['mainProduct']['brand'],
+    #           curResult[1][0]['products']['mainProduct']['productName'], curScore)
+    #     if (check == True):
+    #         return curResult
+    #     else:
+    #         best, bestScore = check
 
-    print("onlyLine")
-    if (curResult == False):
-        print("     실패")
-    else:
-        check = getBest(curResult=curResult, curScore=curScore, best=best, bestScore=bestScore, score=score)
-        print("     ", curResult[1][0]['products']['mainProduct']['brand'],
-              curResult[1][0]['products']['mainProduct']['productName'], curScore)
-        if (check == True):
-            return curResult
-        else:
-            best, bestScore = check
     '''algorithm (5)'''
     # curResult, curScore = get_line_result(lis=lis, cur=cur, score=score,includeBrandLeft=True)
     # print("line + bl")
@@ -622,7 +623,17 @@ def get_product(lis,cur,score):
         return None
     else:
         return best
-
+import codecs, json
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(NpEncoder, self).default(obj)
 @csrf_exempt
 def api(request):
     os.chdir(server_dir)
@@ -631,15 +642,15 @@ def api(request):
     # print("*"*50)
     print("\033[31mmethod", request.method)
     print("keys")
-    print("     rows", request.GET.get('rows'))
-    print("     cols", request.GET.get('cols'))
-    print(request.GET)
+    # print("     rows", request.GET.get('rows'))
+    # print("     cols", request.GET.get('cols'))
+    print(request.GET.get('pos'))
     rows = request.GET.get('rows')
     cols = request.GET.get('cols')
     print("FILES'\033[0m'", request.FILES)
     print("cc",request.COOKIES)
-    print(type(request))
-    if 'media' in request.FILES:
+
+    if 'media' in request.FILES and 'pos' not in request.FILES:
         uploadfile = request.FILES.get('media', '')
         if uploadfile != '':
             print("여기 들어옴 ")
@@ -651,24 +662,91 @@ def api(request):
             fs = FileSystemStorage(location='static/source')
             imgname = fs.save(f"src-{name_old}", uploadfile)
 
-            imgPath=curPath+f"/static/source/{imgname}"
+            imgPath = curPath + f"/static/source/{imgname}"
             os.chdir(path)
-            t1=time.time()
+            t1 = time.time()
             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
 
-            texts = ocr.demo(opt,model)
-            print("model time:",time.time()-t1)
+            texts = ocr.demo(opt, model)
+            print("model time:", time.time() - t1)
             # for i, data in enumerate(points):
             #     print(data, texts[i])
             print(texts)
             # parsedText=groupby_api_legacy(points,texts,rows,cols)
+            print(points)
+            parsedText = groupby_api(points, texts)
+
+            ocr.mkdir()
+            os.chdir(curPath)
+            lineList = parsedText.split('\n')
+
+            q = Q()
+            for i in texts:
+                # print(i)
+                q.add(Q(name__icontains=i), q.OR)
+                q.add(Q(brand__icontains=i), q.OR)
+
+            product = Product.objects.filter(q)
+            product = list(product.values())
+            if (len(product) == 0):
+                print("쿼리 결과 0")
+                # product=origin_cur
+                cur = list(deepcopy(origin_cur))
+
+
+            else:
+                cur = list((p['id'], p['name'], p['brand']) for p in product)
+            best = get_product(lineList, cur, score=95)
+            if (best == None):
+                pass
+            else:
+                nProduct, productList = best
+                data = dict(nProduct=nProduct)
+
+                for i in range(nProduct):
+                    data[str(i)] = productList[i]
+
+                return JsonResponse(data)
+
+    elif 'pos' and 'media' in request.FILES:
+        uploadfile = request.FILES.get('media', '')
+        jsonfile = request.FILES.get('pos', '')
+
+        if uploadfile != '' and jsonfile != '':
+            print("img, json 성공")
+            # rows = int(request.COOKIES.get('rows', ''))
+            # cols = int(request.COOKIES.get('cols', ''))
+            # rows=int(rows)
+            # cols=int(cols)
+            name_old = uploadfile.name
+            fs = FileSystemStorage(location='static/source')
+            imgname = fs.save(f"src-{name_old}", uploadfile)
+            jsonname = fs.save(f"src-{jsonfile.name}", jsonfile)
+
+            imgPath = curPath + f"/static/source/{imgname}"
+            jsonPath= curPath + f"/static/source/{jsonname}"
+            f=open(jsonPath)
+            curJson=json.load(f)
+            print(curJson,type(curJson))
+
+            os.chdir(path)
+            t1 = time.time()
+            img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
+
+            texts = ocr.demo(opt, model)
+            print("model time:", time.time() - t1)
+            # for i, data in enumerate(points):
+            #     print(data, texts[i])
+            print(texts)
+            # parsedText=groupby_api_legacy(points,texts,rows,cols)
+            print(points)
             parsedText = groupby_api(points, texts)
             # print(parsedText)
             # parsedText = groupby_api(points, texts)
             # print("parsedText",parsedText)
             ocr.mkdir()
             os.chdir(curPath)
-            lineList=parsedText.split('\n')
+            lineList = parsedText.split('\n')
             # img = ocr.putText(img, points, texts)
             # print("*"*50)
             # print("texts",texts)
@@ -685,27 +763,25 @@ def api(request):
 
             product = Product.objects.filter(q)
             product = list(product.values())
-            if(len(product)==0):
+            if (len(product) == 0):
                 print("쿼리 결과 0")
                 # product=origin_cur
-                cur=list(deepcopy(origin_cur))
+                cur = list(deepcopy(origin_cur))
 
 
             else:
                 cur = list((p['id'], p['name'], p['brand']) for p in product)
             best = get_product(lineList, cur, score=95)
-            if(best==None):
+            if (best == None):
                 pass
             else:
                 nProduct, productList = best
                 data = dict(nProduct=nProduct)
 
                 for i in range(nProduct):
-                    data[str(i)]=productList[i]
-
+                    data[str(i)] = productList[i]
 
                 return JsonResponse(data)
-
     data = {
         "name": "파일을 읽을 수 없습니다 ",
         "status" : "cannot read file"
