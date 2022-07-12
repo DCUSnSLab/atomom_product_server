@@ -293,8 +293,101 @@ def separate_list(datas):
     return newTexts
 
 
+# def get_user_text(datas,user_datas,ocr_datas):
+#     check = False
+#     newTexts = ""
+#     newText = []
+#     i = 0
+#     # print("ocr result")
+#     # print(datas)
+#     print("*" * 50)
+#     # user_datas = list(map(int, user_datas))
+#     print(user_datas)
+#     for i in range(len(user_datas)):
+#         cur=user_datas[i]
+#         cur = cur.strip('][').split(', ')
+#         cur=list(map(int, cur))
+#         print(cur)
+#         user_datas[i]=cur
+#
+#     print('result',user_datas)
+#     print(ocr_datas)
+#     print("*" * 50)
+#     for i, data in enumerate(user_datas):
+#         r1, c1, r2, c2 = data
+#         range1 = range(r1, r2 + 1)
+#         best_match_ocr_pos_index=-1
+#         best_match_ocr_pos_count=-1
+#         print(data)
+#         for j, data in enumerate(ocr_datas):
+#             r1, c1, r2, c2, t2 = data
+#             range2 = range(r1, r2 + 1)
+#             x = set(range1)
+#             x = x.intersection(range2)
+#             matched_pixels=len(x)
+#             if(matched_pixels>=best_match_ocr_pos_count):
+#                 best_match_ocr_pos_index=j
+#                 best_match_ocr_pos_count=matched_pixels
+#                 print(best_match_ocr_pos_count,best_match_ocr_pos_index)
+#         r1, c1, r2, c2, t2 = ocr_datas[best_match_ocr_pos_index]
+#         print('\t',ocr_datas[best_match_ocr_pos_index])
+#         newText.append(t2)
+#
+#     print(newText)
+def get_user_text(datas,user_datas,ocr_datas):
+    check = False
+    newTexts = ""
+    newText = []
+    i = 0
+    # print("ocr result")
+    # print(datas)
+    # print("*" * 50)
+    # user_datas = list(map(int, user_datas))
+    # print(user_datas)
+    for i in range(len(user_datas)):
+        cur=user_datas[i]
+        cur = cur.strip('][').split(', ')
+        cur=list(map(int, cur))
+        # print(cur)
+        user_datas[i]=cur
 
+    # print('result',user_datas)
+    # print(ocr_datas)
+    # print("*" * 50)
+    for i, data in enumerate(user_datas):
+        c1, r1, c2, r2 = data
+        box1 = (c1, r1, c2, r2)
+        box1_area = (box1[2] - box1[0] + 1) * (box1[3] - box1[1] + 1)
+        temp_text=[]
+        for j, data in enumerate(ocr_datas):
+            r1, c1, r2, c2, t2 = data
+            box2 = (c1, r1, c2, r2)
+            box2_area = (box2[2] - box2[0] + 1) * (box2[3] - box2[1] + 1)
+            x1 = max(box1[0], box2[0])
+            y1 = max(box1[1], box2[1])
+            x2 = min(box1[2], box2[2])
+            y2 = min(box1[3], box2[3])
 
+            w = max(0, x2 - x1 + 1)
+            h = max(0, y2 - y1 + 1)
+
+            inter = w * h
+            iou = inter / (box1_area + box2_area - inter)
+            # print('iou',iou)
+            # print(t2,box1,box2,iou)
+            if(iou>0):
+                temp_text.append(data)
+        temp_text = sorted(temp_text, key=lambda x: (abs(x[1])))
+        temp_text = [i[4] for i in temp_text]
+        newText.append(' '.join(temp_text))
+
+        # r1, c1, r2, c2, t2 = ocr_datas[best_match_ocr_pos_index]
+        # print('\t',ocr_datas[best_match_ocr_pos_index])
+
+        # newText.append(t2)
+
+    # print(newText)
+    return newText
 def groupby_api(points,texts):
 
 
@@ -682,10 +775,14 @@ def api(request):
 
             q = Q()
             for i in texts:
-                # print(i)
+                if (len(i) == 0):
+                    continue
                 q.add(Q(name__icontains=i), q.OR)
                 q.add(Q(brand__icontains=i), q.OR)
-
+                # product = Product.objects.filter(q)
+                # product = list(product.values())
+                # print(i, len(i))
+                # print('\t', len(product))
             product = Product.objects.filter(q)
             product = list(product.values())
             if (len(product) == 0):
@@ -728,7 +825,8 @@ def api(request):
             f=open(jsonPath)
             curJson=json.load(f)
             print(curJson,type(curJson))
-
+            userPos=curJson['pos']
+            print(userPos,type(userPos))
             os.chdir(path)
             t1 = time.time()
             img, points = ocr.craftOperation(imgPath, craftModel, dirPath=opt.image_folder)
@@ -737,16 +835,20 @@ def api(request):
             print("model time:", time.time() - t1)
             # for i, data in enumerate(points):
             #     print(data, texts[i])
-            print(texts)
+
             # parsedText=groupby_api_legacy(points,texts,rows,cols)
-            print(points)
+
+
             parsedText = groupby_api(points, texts)
+            datas=[(*points[i],texts[i]) for i in range(len(texts))]
+            lineList=get_user_text(datas=datas,user_datas=userPos,ocr_datas=datas)
             # print(parsedText)
             # parsedText = groupby_api(points, texts)
             # print("parsedText",parsedText)
             ocr.mkdir()
             os.chdir(curPath)
-            lineList = parsedText.split('\n')
+            # lineList = parsedText.split('\n')
+            # print(lineList)
             # img = ocr.putText(img, points, texts)
             # print("*"*50)
             # print("texts",texts)
@@ -758,11 +860,18 @@ def api(request):
             q = Q()
             for i in texts:
                 # print(i)
+
+                if(len(i)==0):
+                    continue
                 q.add(Q(name__icontains=i), q.OR)
                 q.add(Q(brand__icontains=i), q.OR)
-
+                # product = Product.objects.filter(q)
+                # product = list(product.values())
+                # print(i, len(i))
+                # print('\t',len(product))
             product = Product.objects.filter(q)
             product = list(product.values())
+            print(len(product))
             if (len(product) == 0):
                 print("쿼리 결과 0")
                 # product=origin_cur
