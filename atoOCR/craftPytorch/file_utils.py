@@ -112,16 +112,11 @@ def saveResult_modified(img_file, img, boxes, dirname='./result/', verticals=Non
     with open(res_file, 'w') as f:
         for i, box in enumerate(boxes):
             poly = np.array(box).astype(np.int32).reshape((-1))
-            strResult = ','.join([str(p) for p in poly]) + '\r\n'
-            f.write(strResult)
+            # strResult = ','.join([str(p) for p in poly]) + '\r\n'
+            # f.write(strResult)
 
             poly = poly.reshape(-1, 2)
-            # print(poly)
-            # print(poly.reshape((-1, 1, 2)))
-            # print(len(poly.reshape((-1, 1, 2))))
             arr = poly.reshape((-1, 1, 2))
-            # print(arr[0][0][1])
-            # print(arr)
             ltx, lty = arr[0][0]
             rtx, rty = arr[1][0]
             rbx, rby = arr[2][0]
@@ -130,40 +125,17 @@ def saveResult_modified(img_file, img, boxes, dirname='./result/', verticals=Non
             y1 = min(lty, rty)
             x2 = rbx
             y2 = max(rby, lby)
-
-            # print(arr[0][0])
-            # print(arr[0][0][0], arr[2][0][0], arr[0][0][1], arr[2][0][1])
-            # croped = src[arr[0][0][1]:arr[2][0][1], arr[0][0][0]:arr[2][0][0]]
             croped = src[y1:y2, x1:x2]
-            # y1,y2=(arr[0][0][1],arr[2][0][1])
-            # x1,x2=(arr[0][0][0]<arr[2][0][0])
-            # points.append((arr[0][0][1],arr[0][0][0]))
 
-
-            # print(ltx,lty,rtx,rty,rbx,rby,lbx,lby)
-            # points.append((arr[0][0][1], arr[0][0][0],arr[2][0][1],arr[2][0][0]))
             points.append((y1, x1, y2, x2))
-            #print((y1, x1, y2, x2))
-            #print(poly.reshape((-1, 1, 2)))
-            # for i in poly.reshape((-1, 1, 2)):
-            #     i=i[0]
-            #     row,col=i
-            #     cv2.circle(img,i,5,(255,255,255))
-            # cv2.imshow("img",img)
-            # cv2.waitKey(0)
 
-            cv2.polylines(img, [poly.reshape((-1, 1, 2))], True, color=(0, 0, 255), thickness=2)
-            ptColor = (0, 255, 255)
-            if verticals is not None:
-                if verticals[i]:
-                    ptColor = (255, 0, 0)
-
-            if texts is not None:
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                font_scale = 0.5
-                cv2.putText(img, "{}".format(texts[i]), (poly[0][0] + 1, poly[0][1] + 1), font, font_scale, (0, 0, 0),
-                            thickness=10)
-                cv2.putText(img, "{}".format(texts[i]), tuple(poly[0]), font, font_scale, (0, 255, 255), thickness=1)
+            # cv2.polylines(img, [poly.reshape((-1, 1, 2))], True, color=(0, 0, 255), thickness=2)
+            # if texts is not None:
+            #     font = cv2.FONT_HERSHEY_SIMPLEX
+            #     font_scale = 0.5
+            #     cv2.putText(img, "{}".format(texts[i]), (poly[0][0] + 1, poly[0][1] + 1), font, font_scale, (0, 0, 0),
+            #                 thickness=10)
+            #     cv2.putText(img, "{}".format(texts[i]), tuple(poly[0]), font, font_scale, (0, 255, 255), thickness=1)
 
             imgs.append(croped)
 

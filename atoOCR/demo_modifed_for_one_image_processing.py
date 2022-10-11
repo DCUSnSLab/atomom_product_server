@@ -8,7 +8,7 @@ import torch.utils.data
 import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from utils import CTCLabelConverter, AttnLabelConverter
-from dataset import RawDataset, AlignCollate
+from dataset import RawDataset, AlignCollate, RawDataset2
 from model import Model
 from craftPytorch import craft_demo
 from PIL import ImageFont, ImageDraw, Image
@@ -64,12 +64,13 @@ def setRecognitionModel(opt):
 
 
 
-def demo(opt,model):
+def demo(opt,model,imgs):
     model,converter=model
     # prepare data. two demo images from https://github.com/bgshih/crnn#run-demo
     AlignCollate_demo = AlignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio_with_pad=opt.PAD)
-    demo_data = RawDataset(root=opt.image_folder, opt=opt)  # use RawDataset
-
+    # demo_data = RawDataset(root=opt.image_folder, opt=opt)  # use RawDataset
+    demo_data = RawDataset2(root=opt.image_folder, opt=opt,imgs=imgs)  # use RawDataset
+    # os.system('pause')
     # print("dataLoader batch size",opt.batch_size)
     demo_loader = torch.utils.data.DataLoader(
         demo_data, batch_size=opt.batch_size,
@@ -87,11 +88,23 @@ def demo(opt,model):
             # print(cnt)
             # craftTest(demo_data.__getitem__(cnt)[1])
             # cnt+=1
-            # print(image_path_list)
-
+            # print("image_path_list",image_path_list,'\n')
+            print('print(type(image_tensors))')
+            print(type(image_tensors))
+            print('print(type(torch.Tensor(imgs[0])))')
+            print(type(torch.Tensor(imgs[0])))
+            print('print(image_tensors.shape)')
+            print(image_tensors.shape)
+            print('print(torch.Tensor(imgs[0]).shape)')
+            print(torch.Tensor(imgs[0]).shape)
             batch_size = image_tensors.size(0)
             image = image_tensors.to(device)
-
+            # x = np.expand_dims(imgs[cnt], 1)
+            # image = torch.Tensor(x)
+            # tensor = tensor.unsqueeze(1)
+            #
+            # image = image.to(device)
+            cnt+=1
             # For max length prediction
             length_for_pred = torch.IntTensor([opt.batch_max_length] * batch_size).to(device)
             text_for_pred = torch.LongTensor(batch_size, opt.batch_max_length + 1).fill_(0).to(device)
@@ -123,6 +136,7 @@ def demo(opt,model):
             preds_prob = F.softmax(preds, dim=2)
             preds_max_prob, _ = preds_prob.max(dim=2)
             for img_name, pred, pred_max_prob in zip(image_path_list, preds_str, preds_max_prob):
+                # print(img_name)
                 if 'Attn' in opt.Prediction:
                     pred_EOS = pred.find('[s]')
                     pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
@@ -148,9 +162,11 @@ def saveCraftResult(dirPath,imgs,img):
         savePath= os.path.join(dirPath, str(cnt)+".jpg")
         cv2.imwrite(savePath,i)
         cnt+=1
-
-    savePath = os.path.join(dirPath, "result" + ".jpg")
-    cv2.imwrite(savePath, img)
+    '''
+    원본 이미지에 바운딩박스 치기
+    '''
+    # savePath = os.path.join(dirPath, "result" + ".jpg")
+    # cv2.imwrite(savePath, img)
     # print(savePath)
 
     # cv2.imshow("img", img)
@@ -216,12 +232,14 @@ def putText(img,points,texts):
     return img
 
 def craftOperation(imgPath,craftModel,dirPath):
+    # tempPath = "./temps"  # craft로 분리된 문자열이 저장되는 곳입니다
+    # mkdir(tempPath)
     #print('craftOperation')
     imgs,img,points=getCraftResult(imgPath,craftModel)
-    if not (os.path.isdir(dirPath)):
-        os.makedirs(os.path.join(dirPath))
-    saveCraftResult(dirPath,imgs,img)
-    return img,points
+    # if not (os.path.isdir(dirPath)):
+    #     os.makedirs(os.path.join(dirPath))
+    # saveCraftResult(dirPath,imgs,img)
+    return img,points,imgs
 
 def setModel():
     '''
@@ -272,9 +290,9 @@ def setModel():
     print("num_gpu: ",opt.num_gpu)
 
 
-    tempPath = "./temps"  # craft로 분리된 문자열이 저장되는 곳입니다
-    mkdir(tempPath)
-    opt.image_folder = tempPath
+    # tempPath = "./temps"  # craft로 분리된 문자열이 저장되는 곳입니다
+    # mkdir(tempPath)
+    # opt.image_folder = tempPath
     # print("-"*50)
     # print(os.getcwd())
     # print("-" * 50)
@@ -389,13 +407,14 @@ if __name__ == '__main__':
     # imgPath = "C:/Users/dgdgk/Desktop/atomom_product_server/cosmetic_demo_image/"+name+".jpg"
     #imgPath= "C:/Users/dgdgk/Desktop/atomom_product_server/test_image/"+name+".jpg"
 
-    imgPath= "../roi/016.jpg"
+    # imgPath= "../roi/016.jpg"
+    imgPath = "../origin/016.jpg"
 #     imgPath= "../demo_image/1.jpg"
     img=cv2.imread(imgPath);
     
     craftModel, model, opt = setModel()
     t1=time.time()
-    img,points=craftOperation(imgPath,craftModel,dirPath=opt.image_folder)
+    img,points,imgs=craftOperation(imgPath,craftModel,dirPath=opt.image_folder)
 
     # print(points)
     #
@@ -412,7 +431,7 @@ if __name__ == '__main__':
     # np.save('C:/Users/dgdgk/Documents/text/'+name, zeros)
 
 
-    texts=demo(opt,model)
+    texts=demo(opt,model,imgs)
 #     groupby_api(points,texts)
     print(texts)
     print(time.time()-t1)

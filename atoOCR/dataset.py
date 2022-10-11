@@ -13,6 +13,7 @@ from torch.utils.data import Dataset, ConcatDataset, Subset
 from torch._utils import _accumulate
 import torchvision.transforms as transforms
 
+from matplotlib import cm
 
 class Batch_Balanced_Dataset(object):
 
@@ -253,18 +254,20 @@ class RawDataset(Dataset):
         return (img, self.image_path_list[index])
 class RawDataset2(Dataset):
 
-    def __init__(self, root, opt):
+    def __init__(self, root, opt,imgs):
         self.opt = opt
-        self.image_path_list = []
-        for dirpath, dirnames, filenames in os.walk(root):
-            for name in filenames:
-                _, ext = os.path.splitext(name)
-                ext = ext.lower()
-                if ext == '.jpg' or ext == '.jpeg' or ext == '.png':
-                    self.image_path_list.append(os.path.join(dirpath, name))
+        # self.image_path_list = []
+        # for dirpath, dirnames, filenames in os.walk(root):
+        #     for name in filenames:
+        #         _, ext = os.path.splitext(name)
+        #         ext = ext.lower()
+        #         if ext == '.jpg' or ext == '.jpeg' or ext == '.png':
+        #             self.image_path_list.append(os.path.join(dirpath, name))
+        # self.image_path_list = natsorted(self.image_path_list)
+        # self.nSamples = len(self.image_path_list)
+        self.imgs = imgs
+        self.nSamples = len(self.imgs)
 
-        self.image_path_list = natsorted(self.image_path_list)
-        self.nSamples = len(self.image_path_list)
 
     def __len__(self):
         return self.nSamples
@@ -273,9 +276,18 @@ class RawDataset2(Dataset):
 
         try:
             if self.opt.rgb:
-                img = Image.open(self.image_path_list[index]).convert('RGB')  # for color image
+                # img = Image.open(self.image_path_list[index]).convert('RGB')  # for color image
+                # img = Image.fromarray(np.uint8(self.imgs[index])).convert('RGB')
+                img = Image.fromarray(np.uint8(self.imgs[index])).convert('RGB')
+                # print("여기 1")
             else:
-                img = Image.open(self.image_path_list[index]).convert('L')
+                # img = Image.open(self.image_path_list[index]).convert('L')
+                img = Image.fromarray(np.uint8(self.imgs[index])).convert('L')
+                # print("여기 2")
+                # print(self.nSamples)
+                # print(len(self.imgs))
+                # img = Image.fromarray(np.uint8(cm.gist_earth(self.imgs[index])*255))
+                # img = Image.fromarray(np.uint8(self.imgs[index])).convert('RGB')
 
         except IOError:
             print(f'Corrupted image for {index}')
@@ -285,7 +297,9 @@ class RawDataset2(Dataset):
             else:
                 img = Image.new('L', (self.opt.imgW, self.opt.imgH))
 
-        return (img, self.image_path_list[index])
+        # return (img, self.image_path_list[index])
+
+        return (img,img)
 
 
 class ResizeNormalize(object):

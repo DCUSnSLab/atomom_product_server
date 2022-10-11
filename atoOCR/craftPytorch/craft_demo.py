@@ -223,6 +223,7 @@ def main(imgPath,model):
 
     # print("elapsed time : {}s".format(time.time() - t))
     # shutil.rmtree(args.test_folder)
+
     if os.path.exists(args.test_folder):
         for file in os.scandir(args.test_folder):
             os.remove(file.path)
